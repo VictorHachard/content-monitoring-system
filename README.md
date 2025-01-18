@@ -40,7 +40,6 @@ This repository provides a Docker Compose setup for the Content Monitoring Syste
 
   - `/app/data`: A volume mounted on the container for persistent storage of monitoring results.
 
-
 ## Docker Compose Example
 
 ```yaml

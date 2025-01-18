@@ -5,10 +5,7 @@ import time
 
 import requests
 from bs4 import BeautifulSoup
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.chrome.options import Options
-from notifications import send_discord_notification
+from selenium_session import SeleniumSession
 
 
 def save_data(file_path, data):
@@ -24,7 +21,9 @@ def load_data(file_path):
     return {}
 
 
-def check_availability(storage_dir, discord_webhook_url, mention_users, rules):
+def check_availability(storage_dir, notif, rules):
+    selenium_session = SeleniumSession() if any(rule.get("use_selenium", False) for rule in rules.values()) else None
+
     previous_data_path = os.path.join(storage_dir, 'previous_data.json')
     missing_data_path = os.path.join(storage_dir, 'missing_elements.json')
     previous_data = load_data(previous_data_path)
@@ -36,7 +35,7 @@ def check_availability(storage_dir, discord_webhook_url, mention_users, rules):
         use_selenium = rule.get("use_selenium", False)
 
         try:
-            page_content = fetch_page_content(url, use_selenium)
+            page_content = fetch_page_content(url, use_selenium, selenium_session)
             soup = BeautifulSoup(page_content, 'html.parser')
 
             for selector in selectors:
@@ -48,14 +47,12 @@ def check_availability(storage_dir, discord_webhook_url, mention_users, rules):
                     if key not in missing_data or not missing_data[key].get("alert_sent", False):
                         missing_data[key] = {"url": url, "selector": selector, "timestamp": time.time(), "alert_sent": True}
                         save_data(missing_data_path, missing_data)
-                        send_discord_notification(
-                            discord_webhook_url,
+                        notif.send(
                             title="Element Missing Alert",
                             description=f"The element specified by the selector `{selector}` is missing on the page.",
                             url=url,
                             fields={"URL": url, "Selector": f"`{selector}`"},
                             color='#ffc107',
-                            mention_users=mention_users
                         )
                     continue
 
@@ -68,20 +65,17 @@ def check_availability(storage_dir, discord_webhook_url, mention_users, rules):
                     logging.info(f"Element returned for {url} with selector {selector}")
                     del missing_data[key]
                     save_data(missing_data_path, missing_data)
-                    send_discord_notification(
-                        discord_webhook_url,
+                    notif.send(
                         title="Element Returned Notification",
                         description=f"The element specified by the selector `{selector}` has returned to the page.",
                         url=url,
                         fields={"URL": url, "Selector": f"`{selector}`"},
                         color='#ffc107',
-                        mention_users=mention_users
                     )
 
                 if key not in previous_data:
                     logging.info(f"First-time change detected for {url} with selector {selector}")
-                    send_discord_notification(
-                        discord_webhook_url,
+                    notif.send(
                         title="First-Time Content Detected",
                         description="Content is being tracked for the first time.",
                         url=url,
@@ -91,12 +85,10 @@ def check_availability(storage_dir, discord_webhook_url, mention_users, rules):
                             "Data": f"`{text_content}`",
                         },
                         color='#0dcaf0',
-                        mention_users=mention_users
                     )
                 elif previous_data[key]["html"] != html_content:
                     logging.info(f"Change detected for {url} with selector {selector}")
-                    send_discord_notification(
-                        discord_webhook_url,
+                    notif.send(
                         title="Content Change Detected",
                         description="A change has been detected on the monitored content.",
                         url=url,
@@ -107,44 +99,26 @@ def check_availability(storage_dir, discord_webhook_url, mention_users, rules):
                             "New Data": f"`{text_content}`",
                         },
                         color='#0d6efd',
-                        mention_users=mention_users
                     )
                 else:
                     logging.info(f"No change detected for {url} with selector {selector}")
 
         except Exception as e:
             logging.error(f"Error checking {url}: {e}")
-            send_discord_notification(
-                discord_webhook_url,
+            notif.send(
                 title="Exception Occurred",
                 description=f"An exception occurred while checking the page: `{e}`",
                 url=url,
                 color='#dc3545',
-                mention_users=mention_users
             )
 
     save_data(previous_data_path, current_data)
 
 
-def fetch_page_content(url, use_selenium):
-    if use_selenium:
-        options = Options()
-        options.add_argument("--headless")
-        options.add_argument("--disable-gpu")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        options.binary_location = "/usr/bin/chromium"  # Chromium binary location
-
-        # Use ChromiumDriver installed in the container
-        service = ChromeService("/usr/bin/chromedriver")  
-        driver = webdriver.Chrome(service=service, options=options)
-        try:
-            driver.get(url)
-            time.sleep(3)  # Allow time for JavaScript to load
-            content = driver.page_source
-        finally:
-            driver.quit()
-        return content
+def fetch_page_content(url, use_selenium, selenium_session=None):
+    if use_selenium and selenium_session:
+        # Use the shared Selenium session
+        return selenium_session.fetch_page(url)
     else:
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'

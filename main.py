@@ -2,7 +2,7 @@ import time
 import logging
 import json
 from checker import check_availability
-from notifications import send_discord_notification
+from notification_service import NotificationService
 
 logging.basicConfig(
     level=logging.INFO,
@@ -17,12 +17,6 @@ if __name__ == "__main__":
     def format_interval(interval):
         """
         Formats a time interval (in seconds) into a human-readable string with correct singular/plural forms.
-
-        Args:
-            interval (int): Time interval in seconds.
-
-        Returns:
-            str: Human-readable string representing the interval.
         """
         interval_modified = interval
         interval_formatted = []
@@ -81,19 +75,18 @@ if __name__ == "__main__":
         exit(1)
     else:
         logging.info(f"Starting checks with interval of {interval} seconds.")
+        notif = NotificationService(discord_webhook_url, mention_users)
         rules_formatted = "\n".join(
             f"- **URL**: {url}\n  - **Selectors**: {', '.join(rule['selectors'])}\n  - **Use Selenium**: {'Yes' if rule['use_selenium'] else 'No'}"
             for url, rule in rules.items()
         )
-        send_discord_notification(
-            discord_webhook_url,
+        notif.send(
             title="Content Monitoring System Started",
             description="The content monitoring system has started successfully.",
             fields={"Interval": format_interval(interval), "Rules": rules_formatted},
             color='#0dcaf0',
-            mention_users=mention_users
         )
         del rules_formatted
         while True:
-            check_availability(storage_dir, discord_webhook_url, mention_users, rules)
+            check_availability(storage_dir, dnotif, rules)
             time.sleep(interval)
