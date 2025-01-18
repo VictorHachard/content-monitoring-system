@@ -15,10 +15,11 @@ def send_discord_notification(
     """
     Send a Discord notification using a webhook.
     """
+    mention_content = ""
     if mention_users:
-        description = " ".join([f"<@{user}>" for user in mention_users]) + "\n" + description
+        mention_content = " ".join([f"<@{user}>" for user in mention_users])
 
-    webhook = DiscordWebhook(url=webhook_url)
+    webhook = DiscordWebhook(url=webhook_url, content=mention_content)
     embed = DiscordEmbed(title=title, description=description, color=color.replace("#", "") if color else 0)
 
     if url:
