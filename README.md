@@ -19,6 +19,10 @@ This repository provides a Docker Compose setup for the Content Monitoring Syste
     ```
     https://discord.com/api/webhooks/1234567890/ABCDEFGHIJKLMNOPQRSTUVWXYZ
     ```
+  - `MENTION_USERS`: A comma-separated list of Discord user IDs to mention in notifications. Example:
+    ```
+    1234567890,0987654321
+    ```
   - `INTERVAL`: Specifies the monitoring interval in seconds. The default value is `300`.
   - `RULES`: A JSON string that configures the selectors for monitored pages. Example configuration:
     ```json
@@ -45,6 +49,7 @@ services:
     image: ghcr.io/victorhachard/cms:VERSION
     environment:
       DISCORD_WEBHOOK_URL: https://discord.com/api/webhooks/1234567890/ABCDEFGHIJKLMNOPQRSTUVWXYZ
+      MENTION_USERS: 1234567890,0987654321
       INTERVAL: 300
       RULES: |
         {

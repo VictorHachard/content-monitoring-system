@@ -17,9 +17,10 @@ if __name__ == "__main__":
     logging.info("Starting Content Monitoring System")
     import argparse
 
-    parser = argparse.ArgumentParser(description="Check availability of items on websites.")
+    parser = argparse.ArgumentParser(description="Content Monitoring System")
     parser.add_argument('--storage-dir', type=str, required=True, help="Path to directory containing storage data.")
     parser.add_argument('--webhook', type=str, required=True, help="Discord webhook URL.")
+    parser.add_argument('--mention-users', type=str, help="Comma-separated list of Discord user IDs to ping.")
     parser.add_argument('--interval', type=int, default=300, help="Interval between checks in seconds.")
     parser.add_argument('--rules', type=str, required=True, help="JSON string defining the rules for availability checks.")
 
@@ -27,6 +28,7 @@ if __name__ == "__main__":
 
     storage_dir = args.storage_dir
     discord_webhook_url = args.webhook
+    mention_users = args.mention_users.split(",") if args.mention_users else None
     interval = args.interval
 
     # Parse rules JSON
@@ -37,14 +39,13 @@ if __name__ == "__main__":
         rules = {}
 
     if not rules:
-        logging.warning("No rules defined. Exiting.")
+        logging.error("No rules defined. Exiting.")
         exit(1)
-    elif interval < 5:
-        logging.warning("Interval cannot be less than 5 seconds. Exiting.")
+    elif interval < 10:
+        logging.error("Interval cannot be less than 10 seconds. Exiting.")
         exit(1)
     else:
         logging.info(f"Starting checks with interval of {interval} seconds.")
-        # Send a dicord notification when the script starts if the interval and all the rules
         rules_formatted = "\n".join(
             f"- **URL**: {url}\n  - **Selectors**: {', '.join(rule['selectors'])}\n  - **Use Selenium**: {'Yes' if rule['use_selenium'] else 'No'}"
             for url, rule in rules.items()
@@ -54,9 +55,10 @@ if __name__ == "__main__":
             title="Content Monitoring System Started",
             description="The content monitoring system has started successfully.",
             fields={"Interval": f"{interval} seconds", "Rules": rules_formatted},
-            color='#0dcaf0'
+            color='#0dcaf0',
+            mention_users=mention_users
         )
         del rules_formatted
         while True:
-            check_availability(storage_dir, discord_webhook_url, rules)
+            check_availability(storage_dir, discord_webhook_url, mention_users, rules)
             time.sleep(interval)

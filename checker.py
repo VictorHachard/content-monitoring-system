@@ -24,7 +24,7 @@ def load_data(file_path):
     return {}
 
 
-def check_availability(storage_dir, discord_webhook_url, rules):
+def check_availability(storage_dir, discord_webhook_url, mention_users, rules):
     previous_data_path = os.path.join(storage_dir, 'previous_data.json')
     missing_data_path = os.path.join(storage_dir, 'missing_elements.json')
     previous_data = load_data(previous_data_path)
@@ -54,7 +54,8 @@ def check_availability(storage_dir, discord_webhook_url, rules):
                             description=f"The element specified by the selector `{selector}` is missing on the page.",
                             url=url,
                             fields={"URL": url, "Selector": f"`{selector}`"},
-                            color='#ffc107'
+                            color='#ffc107',
+                            mention_users=mention_users
                         )
                     continue
 
@@ -73,7 +74,8 @@ def check_availability(storage_dir, discord_webhook_url, rules):
                         description=f"The element specified by the selector `{selector}` has returned to the page.",
                         url=url,
                         fields={"URL": url, "Selector": f"`{selector}`"},
-                        color='#ffc107'
+                        color='#ffc107',
+                        mention_users=mention_users
                     )
 
                 if key not in previous_data:
@@ -88,7 +90,8 @@ def check_availability(storage_dir, discord_webhook_url, rules):
                             "Selector": f"`{selector}`",
                             "Data": f"`{text_content}`",
                         },
-                        color='#0dcaf0'
+                        color='#0dcaf0',
+                        mention_users=mention_users
                     )
                 elif previous_data[key]["html"] != html_content:
                     logging.info(f"Change detected for {url} with selector {selector}")
@@ -103,7 +106,8 @@ def check_availability(storage_dir, discord_webhook_url, rules):
                             "Old Data": f"`{previous_data[key]['text']}`" if previous_data[key]['text'] else "N/A",
                             "New Data": f"`{text_content}`",
                         },
-                        color='#0d6efd'
+                        color='#0d6efd',
+                        mention_users=mention_users
                     )
                 else:
                     logging.info(f"No change detected for {url} with selector {selector}")
@@ -115,7 +119,8 @@ def check_availability(storage_dir, discord_webhook_url, rules):
                 title="Exception Occurred",
                 description=f"An exception occurred while checking the page: `{e}`",
                 url=url,
-                color='#dc3545'
+                color='#dc3545',
+                mention_users=mention_users
             )
 
     save_data(previous_data_path, current_data)
