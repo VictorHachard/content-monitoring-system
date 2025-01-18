@@ -1,4 +1,4 @@
-# Content Monitoring System Configuration
+# Content Monitoring System
 
 This repository provides a Docker Compose setup for the Content Monitoring System, which monitors specified web pages for content changes and sends notifications via Discord webhook.
 
@@ -11,7 +11,7 @@ This repository provides a Docker Compose setup for the Content Monitoring Syste
 
 ### Docker Image
 
-  - `ghcr.io/VictorHachard/cms:<version>`
+  - `ghcr.io/victorhachard/cms:VERSION`
 
 ## Configuration
 
@@ -42,11 +42,17 @@ This repository provides a Docker Compose setup for the Content Monitoring Syste
 ```yaml
 services:
   content_monitoring_system:
-    image: ghcr.io/VictorHachard/cms:VERSION
+    image: ghcr.io/victorhachard/cms:VERSION
     environment:
       DISCORD_WEBHOOK_URL: https://discord.com/api/webhooks/1234567890/ABCDEFGHIJKLMNOPQRSTUVWXYZ
       INTERVAL: 300
-      RULES: {"https://example.com/page": {"selectors": ["div.test-selector"], "use_selenium": false}}
+      RULES: |
+        {
+          "https://example.com/page": {
+              "selectors": ["div.test-selector"],
+              "use_selenium": false
+            }
+        }
     volumes:
       - app_data:/app/data
 
