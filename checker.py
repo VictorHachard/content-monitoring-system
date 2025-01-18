@@ -23,6 +23,7 @@ def load_data(file_path):
             return json.load(file)
     return {}
 
+
 def check_availability(storage_dir, discord_webhook_url, rules):
     previous_data_path = os.path.join(storage_dir, 'previous_data.json')
     missing_data_path = os.path.join(storage_dir, 'missing_elements.json')
@@ -104,6 +105,8 @@ def check_availability(storage_dir, discord_webhook_url, rules):
                         },
                         color='ff5733'
                     )
+                else:
+                    logging.info(f"No change detected for {url} with selector {selector}")
 
         except Exception as e:
             logging.error(f"Error checking {url}: {e}")

@@ -13,6 +13,7 @@ logging.basicConfig(
 
 
 if __name__ == "__main__":
+    logging.info("Starting Content Monitoring System")
     import argparse
 
     parser = argparse.ArgumentParser(description="Check availability of items on websites.")
