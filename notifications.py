@@ -4,7 +4,7 @@ from discord_webhook import DiscordWebhook, DiscordEmbed
 
 def send_discord_notification(webhook_url, title, description, url=None, fields=None, color=None, footer="Content monitoring system"):
     webhook = DiscordWebhook(url=webhook_url)
-    embed = DiscordEmbed(title=title, description=description, color=color)
+    embed = DiscordEmbed(title=title, description=description, color=color.replace("#", "") if color else 0)
 
     if url:
         embed.set_url(url)

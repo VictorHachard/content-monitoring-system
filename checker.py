@@ -54,7 +54,7 @@ def check_availability(storage_dir, discord_webhook_url, rules):
                             description=f"The element specified by the selector `{selector}` is missing on the page.",
                             url=url,
                             fields={"URL": url, "Selector": f"`{selector}`"},
-                            color='ff0000'
+                            color='#ffc107'
                         )
                     continue
 
@@ -73,7 +73,7 @@ def check_availability(storage_dir, discord_webhook_url, rules):
                         description=f"The element specified by the selector `{selector}` has returned to the page.",
                         url=url,
                         fields={"URL": url, "Selector": f"`{selector}`"},
-                        color='00ff00'
+                        color='#ffc107'
                     )
 
                 if key not in previous_data:
@@ -88,7 +88,7 @@ def check_availability(storage_dir, discord_webhook_url, rules):
                             "Selector": f"`{selector}`",
                             "Data": f"`{text_content}`",
                         },
-                        color='00ffcc'
+                        color='#0dcaf0'
                     )
                 elif previous_data[key]["html"] != html_content:
                     logging.info(f"Change detected for {url} with selector {selector}")
@@ -103,7 +103,7 @@ def check_availability(storage_dir, discord_webhook_url, rules):
                             "Old Data": f"`{previous_data[key]['text']}`" if previous_data[key]['text'] else "N/A",
                             "New Data": f"`{text_content}`",
                         },
-                        color='ff5733'
+                        color='#0d6efd'
                     )
                 else:
                     logging.info(f"No change detected for {url} with selector {selector}")
@@ -115,7 +115,7 @@ def check_availability(storage_dir, discord_webhook_url, rules):
                 title="Exception Occurred",
                 description=f"An exception occurred while checking the page: `{e}`",
                 url=url,
-                color='ff0000'
+                color='#dc3545'
             )
 
     save_data(previous_data_path, current_data)
