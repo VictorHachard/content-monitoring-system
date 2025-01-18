@@ -42,7 +42,7 @@ This repository provides a Docker Compose setup for the Content Monitoring Syste
 ```yaml
 services:
   content_monitoring_system:
-    image: ghcr.io/VictorHachard/cms:<version>
+    image: ghcr.io/VictorHachard/cms:VERSION
     environment:
       DISCORD_WEBHOOK_URL: https://discord.com/api/webhooks/1234567890/ABCDEFGHIJKLMNOPQRSTUVWXYZ
       INTERVAL: 300
