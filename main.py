@@ -14,6 +14,41 @@ logging.basicConfig(
 
 
 if __name__ == "__main__":
+    def format_interval(interval):
+        """
+        Formats a time interval (in seconds) into a human-readable string with correct singular/plural forms.
+
+        Args:
+            interval (int): Time interval in seconds.
+
+        Returns:
+            str: Human-readable string representing the interval.
+        """
+        interval_modified = interval
+        interval_formatted = []
+
+        if interval_modified >= 86400:
+            days = interval_modified // 86400
+            interval_formatted.append(f"{days} day" + ("s" if days > 1 else ""))
+            interval_modified %= 86400
+        if interval_modified >= 3600:
+            hours = interval_modified // 3600
+            interval_formatted.append(f"{hours} hour" + ("s" if hours > 1 else ""))
+            interval_modified %= 3600
+        if interval_modified >= 60:
+            minutes = interval_modified // 60
+            interval_formatted.append(f"{minutes} minute" + ("s" if minutes > 1 else ""))
+            interval_modified %= 60
+        if interval_modified > 0:
+            interval_formatted.append(f"{interval_modified} second" + ("s" if interval_modified > 1 else ""))
+
+        if len(interval_formatted) > 1:
+            return ", ".join(interval_formatted[:-1]) + " and " + interval_formatted[-1]
+        elif interval_formatted:
+            return interval_formatted[0]
+        else:
+            return "0 seconds"
+        
     logging.info("Starting Content Monitoring System")
     import argparse
 
@@ -54,7 +89,7 @@ if __name__ == "__main__":
             discord_webhook_url,
             title="Content Monitoring System Started",
             description="The content monitoring system has started successfully.",
-            fields={"Interval": f"{interval} seconds", "Rules": rules_formatted},
+            fields={"Interval": format_interval(interval), "Rules": rules_formatted},
             color='#0dcaf0',
             mention_users=mention_users
         )
