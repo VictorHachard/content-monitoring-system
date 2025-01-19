@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import time
+from datetime import datetime, timezone
 
 import requests
 from bs4 import BeautifulSoup
@@ -32,10 +33,13 @@ def check_availability(storage_dir, notif, rules):
 
     for url, rule in rules.items():
         selectors = rule.get("selectors", [])
+        logging.debug(f"Checking {url} with selectors: {selectors}")
         use_selenium = rule.get("use_selenium", False)
 
         try:
             page_content = fetch_page_content(url, use_selenium, selenium_session)
+            logging.debug(f"Page content fetched for {url}")
+            logging.debug(f"Page content: {page_content}")
             soup = BeautifulSoup(page_content, 'html.parser')
 
             for selector in selectors:
@@ -59,7 +63,7 @@ def check_availability(storage_dir, notif, rules):
                 html_content = element.prettify()
                 text_content = element.get_text(strip=True)
 
-                current_data[key] = {"html": html_content, "text": text_content}
+                current_data[key] = {"html": html_content, "text": text_content, "timestamp": time.time()}
 
                 if key in missing_data:
                     logging.info(f"Element returned for {url} with selector {selector}")
@@ -88,6 +92,10 @@ def check_availability(storage_dir, notif, rules):
                     )
                 elif previous_data[key]["html"] != html_content:
                     logging.info(f"Change detected for {url} with selector {selector}")
+                    if 'timestamp' in previous_data[key]:
+                        last_updated = datetime.fromtimestamp(previous_data[key]['timestamp'], timezone.utc).strftime('%Y-%m-%d %H:%M:%S') + ' UTC'
+                    else:
+                        last_updated = "N/A"
                     notif.send(
                         title="Content Change Detected",
                         description="A change has been detected on the monitored content.",
@@ -97,6 +105,7 @@ def check_availability(storage_dir, notif, rules):
                             "Selector": f"`{selector}`",
                             "Old Data": f"`{previous_data[key]['text']}`" if previous_data[key]['text'] else "N/A",
                             "New Data": f"`{text_content}`",
+                            "Last Updated": last_updated,
                         },
                         color='#0d6efd',
                     )
