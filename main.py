@@ -1,6 +1,9 @@
+import os
 import time
 import logging
 import json
+
+from check_version import check_for_update
 from checker import check_availability
 from notification_service import NotificationService
 
@@ -44,6 +47,7 @@ if __name__ == "__main__":
             return "0 seconds"
         
     logging.info("Starting Content Monitoring System")
+    update = check_for_update()
     import argparse
 
     parser = argparse.ArgumentParser(description="Content Monitoring System")
@@ -74,7 +78,6 @@ if __name__ == "__main__":
         logging.error("Interval cannot be less than 10 seconds. Exiting.")
         exit(1)
     else:
-        logging.info(f"Starting checks with interval of {interval} seconds.")
         notif = NotificationService(discord_webhook_url, mention_users)
         rules_formatted = "\n".join(
             f"- **URL**: {url}\n  - **Selectors**: {', '.join(rule['selectors'])}\n  - **Use Selenium**: {'Yes' if rule['use_selenium'] else 'No'}"
@@ -86,7 +89,15 @@ if __name__ == "__main__":
             fields={"Interval": format_interval(interval), "Rules": rules_formatted},
             color='#0dcaf0',
         )
+        if isinstance(update, tuple):
+            notif.send(
+                title="New Version Available",
+                description="A new version of the content monitoring system is available. Please update.",
+                fields={"Current Version": update[0], "Latest Version": update[1]},
+                color='#ffc107',
+            )
         del rules_formatted
+        logging.info(f"Starting checks with interval of {interval} seconds")
         while True:
-            check_availability(storage_dir, dnotif, rules)
+            check_availability(storage_dir, notif, rules)
             time.sleep(interval)
