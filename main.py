@@ -78,7 +78,12 @@ if __name__ == "__main__":
         logging.error("Interval cannot be less than 10 seconds. Exiting.")
         exit(1)
     else:
-        notif = NotificationService(discord_webhook_url, mention_users)
+        current_version = update if isinstance(update, str) else update[0] if isinstance(update, tuple) else None
+        if current_version:
+            footer = f"Content monitoring system v{current_version}"
+        else:
+            footer = "Content monitoring system"
+        notif = NotificationService(discord_webhook_url, mention_users, footer=footer)
         rules_formatted = "\n".join(
             f"- **URL**: {url}\n  - **Selectors**: {', '.join(rule['selectors'])}\n  - **Use Selenium**: {'Yes' if rule['use_selenium'] else 'No'}"
             for url, rule in rules.items()
@@ -96,7 +101,7 @@ if __name__ == "__main__":
                 fields={"Current Version": update[0], "Latest Version": update[1]},
                 color='#ffc107',
             )
-        del rules_formatted
+        del rules_formatted, update, current_version, footer
         logging.info(f"Starting checks with interval of {interval} seconds")
         while True:
             check_availability(storage_dir, notif, rules)

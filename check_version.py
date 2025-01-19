@@ -1,5 +1,4 @@
 import os
-import subprocess
 
 import requests
 import logging
@@ -17,34 +16,39 @@ def get_current_image_version():
         return None
 
 
-def get_latest_git_tag():
-    """Fetch the latest Git tag from the repository."""
+def get_latest_github_tag():
+    """Fetch the latest Git tag from the public GitHub repository using the API."""
+    url = f"https://api.github.com/repos/VictorHachard/content-monitoring-system/tags"
+
     try:
-        output = subprocess.check_output(
-            ["git", "fetch", "--tags"], stderr=subprocess.DEVNULL
-        )
-        latest_tag = subprocess.check_output(
-            ["git", "describe", "--tags", "--abbrev=0"],
-            stderr=subprocess.DEVNULL
-        ).decode().strip()
-        logging.info(f"Latest git tag: {latest_tag}")
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+
+        tags = response.json()
+
+        if not tags:
+            logging.warning("No tags found in the repository.")
+            return None
+
+        latest_tag = tags[0]['name']
+        logging.info(f"Latest GitHub tag: {latest_tag}")
         return latest_tag
     except Exception as e:
-        logging.warning(f"Failed to fetch latest git tag: {e}")
+        logging.error(f"Failed to fetch latest GitHub tag: {e}")
         return None
 
 
 def check_for_update():
     current_version = get_current_image_version()
-    latest_version = get_latest_git_tag()
+    latest_version = get_latest_github_tag()
 
     if current_version and latest_version:
         if current_version != latest_version:
             logging.info(f"New version available: {latest_version}. Please update")
-            return (current_version, latest_version)
+            return current_version, latest_version
         else:
             logging.info("You are using the latest version")
-            return True
+            return current_version
     else:
         logging.warning("Could not verify version information")
         return None
