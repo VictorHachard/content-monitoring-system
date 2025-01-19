@@ -80,7 +80,7 @@ if __name__ == "__main__":
     else:
         current_version = update if isinstance(update, str) else update[0] if isinstance(update, tuple) else None
         if current_version:
-            footer = f"Content monitoring system v{current_version}"
+            footer = f"Content monitoring system {current_version}"
         else:
             footer = "Content monitoring system"
         notif = NotificationService(discord_webhook_url, mention_users, footer=footer)
