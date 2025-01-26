@@ -3,3 +3,4 @@ beautifulsoup4
 selenium
 webdriver-manager
 discord-webhook
+vha-toolbox

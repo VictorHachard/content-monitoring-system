@@ -1,7 +1,8 @@
-import os
 import time
 import logging
 import json
+
+from vha_toolbox import seconds_to_humantime
 
 from check_version import check_for_update
 from checker import check_availability
@@ -17,35 +18,6 @@ logging.basicConfig(
 
 
 if __name__ == "__main__":
-    def format_interval(interval):
-        """
-        Formats a time interval (in seconds) into a human-readable string with correct singular/plural forms.
-        """
-        interval_modified = interval
-        interval_formatted = []
-
-        if interval_modified >= 86400:
-            days = interval_modified // 86400
-            interval_formatted.append(f"{days} day" + ("s" if days > 1 else ""))
-            interval_modified %= 86400
-        if interval_modified >= 3600:
-            hours = interval_modified // 3600
-            interval_formatted.append(f"{hours} hour" + ("s" if hours > 1 else ""))
-            interval_modified %= 3600
-        if interval_modified >= 60:
-            minutes = interval_modified // 60
-            interval_formatted.append(f"{minutes} minute" + ("s" if minutes > 1 else ""))
-            interval_modified %= 60
-        if interval_modified > 0:
-            interval_formatted.append(f"{interval_modified} second" + ("s" if interval_modified > 1 else ""))
-
-        if len(interval_formatted) > 1:
-            return ", ".join(interval_formatted[:-1]) + " and " + interval_formatted[-1]
-        elif interval_formatted:
-            return interval_formatted[0]
-        else:
-            return "0 seconds"
-        
     logging.info("Starting Content Monitoring System")
     update = check_for_update()
     import argparse
