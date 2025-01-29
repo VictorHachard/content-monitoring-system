@@ -63,7 +63,7 @@ if __name__ == "__main__":
         notif.send(
             title="Content Monitoring System Started",
             description="The content monitoring system has started successfully.",
-            fields={"Interval": format_interval(interval), "Rules": rules_formatted},
+            fields={"Interval": seconds_to_humantime(interval), "Rules": rules_formatted},
             color='#0dcaf0',
         )
         if isinstance(update, tuple):
