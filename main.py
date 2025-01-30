@@ -46,7 +46,7 @@ if __name__ == "__main__":
     if not rules:
         logging.error("No rules defined. Exiting.")
         exit(1)
-    elif interval < 10:
+    elif interval < 5:
         logging.error("Interval cannot be less than 10 seconds. Exiting.")
         exit(1)
     else:
