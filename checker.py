@@ -27,8 +27,10 @@ def check_availability(storage_dir, notif, rules):
 
     previous_data_path = os.path.join(storage_dir, 'previous_data.json')
     missing_data_path = os.path.join(storage_dir, 'missing_elements.json')
+    require_javascript_path = os.path.join(storage_dir, 'require_javascript.json')
     previous_data = load_data(previous_data_path)
     missing_data = load_data(missing_data_path)
+    require_javascript_data = load_data(require_javascript_path)
     current_data = {}
 
     for url, rule in rules.items():
@@ -38,9 +40,36 @@ def check_availability(storage_dir, notif, rules):
 
         try:
             page_content = fetch_page_content(url, use_selenium, selenium_session)
-            logging.debug(f"Page content fetched for {url}")
-            logging.debug(f"Page content: {page_content}")
             soup = BeautifulSoup(page_content, 'html.parser')
+            for tag in soup.find_all(["script", "style", "header", "head"]):
+                tag.decompose()
+            logging.debug(f"Page content fetched for {url}")
+            logging.debug(f"Page content: {soup.prettify()}")
+            # Check if the page content is 'This site requires Javascript in order to view all its content.'
+            if "This site requires Javascript in order to view all its content." in page_content:
+                logging.warning(f"Page content requires Javascript for {url}")
+                if url not in require_javascript_data or not require_javascript_data[url].get("alert_sent", False):
+                    require_javascript_data[url] = {"url": url, "timestamp": time.time(), "alert_sent": True}
+                    save_data(require_javascript_path, require_javascript_data)
+                    notif.send(
+                        title="Javascript Required Alert",
+                        description="The page content requires Javascript",
+                        url=url,
+                        fields={"URL": url},
+                        color='#ffc107',
+                    )
+                continue
+            if url in require_javascript_data:
+                logging.info(f"Page content no longer requires Javascript for {url}")
+                del require_javascript_data[url]
+                save_data(require_javascript_path, require_javascript_data)
+                notif.send(
+                    title="Javascript No Longer Required Notification",
+                    description="The page content no longer requires Javascript",
+                    url=url,
+                    fields={"URL": url},
+                    color='#ffc107',
+                )
 
             for selector in selectors:
                 element = soup.select_one(selector)
@@ -124,7 +153,7 @@ def check_availability(storage_dir, notif, rules):
     save_data(previous_data_path, current_data)
 
 
-def fetch_page_content(url, use_selenium, selenium_session=None):
+def fetch_page_content(url, use_selenium=False, selenium_session=None):
     if use_selenium and selenium_session:
         # Use the shared Selenium session
         return selenium_session.fetch_page(url)
