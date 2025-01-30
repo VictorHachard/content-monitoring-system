@@ -48,28 +48,28 @@ def check_availability(storage_dir, notif, rules):
             # Check if the page content is 'This site requires Javascript in order to view all its content.'
             if "This site requires Javascript in order to view all its content." in page_content:
                 logging.warning(f"Page content requires Javascript for {url}")
-                if url not in require_javascript_data or not require_javascript_data[url].get("alert_sent", False):
-                    require_javascript_data[url] = {"url": url, "timestamp": time.time(), "alert_sent": True}
-                    save_data(require_javascript_path, require_javascript_data)
-                    notif.send(
-                        title="Javascript Required Alert",
-                        description="The page content requires Javascript",
-                        url=url,
-                        fields={"URL": url},
-                        color='#ffc107',
-                    )
-                continue
-            if url in require_javascript_data:
-                logging.info(f"Page content no longer requires Javascript for {url}")
-                del require_javascript_data[url]
-                save_data(require_javascript_path, require_javascript_data)
-                notif.send(
-                    title="Javascript No Longer Required Notification",
-                    description="The page content no longer requires Javascript",
-                    url=url,
-                    fields={"URL": url},
-                    color='#ffc107',
-                )
+            #     if url not in require_javascript_data or not require_javascript_data[url].get("alert_sent", False):
+            #         require_javascript_data[url] = {"url": url, "timestamp": time.time(), "alert_sent": True}
+            #         save_data(require_javascript_path, require_javascript_data)
+            #         notif.send(
+            #             title="Javascript Required Alert",
+            #             description="The page content requires Javascript",
+            #             url=url,
+            #             fields={"URL": url},
+            #             color='#ffc107',
+            #         )
+            #     continue
+            # if url in require_javascript_data:
+            #     logging.info(f"Page content no longer requires Javascript for {url}")
+            #     del require_javascript_data[url]
+            #     save_data(require_javascript_path, require_javascript_data)
+            #     notif.send(
+            #         title="Javascript No Longer Required Notification",
+            #         description="The page content no longer requires Javascript",
+            #         url=url,
+            #         fields={"URL": url},
+            #         color='#ffc107',
+            #     )
 
             for selector in selectors:
                 element = soup.select_one(selector)
@@ -145,7 +145,8 @@ def check_availability(storage_dir, notif, rules):
             logging.error(f"Error checking {url}: {e}")
             notif.send(
                 title="Exception Occurred",
-                description=f"An exception occurred while checking the page: `{e}`",
+                description=f"An exception occurred while checking the page content.",
+                fields={"URL": url, "Exception": f"`{e}`"},
                 url=url,
                 color='#dc3545',
             )
