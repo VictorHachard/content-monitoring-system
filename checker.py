@@ -139,9 +139,9 @@ def check_webpage_availability(url, rule, selenium_session, previous_data, missi
 
     except Exception as e:
         logging.error(f"Error fetching webpage content from {url}: {e}")
-        if not isinstance(e, (requests.exceptions.HTTPError, requests.exceptions.ConnectionError)) or \
+        if not isinstance(e, (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)) or \
             (
-                isinstance(e, (requests.exceptions.HTTPError, requests.exceptions.ConnectionError)) and rule.get("notification_on_error", True)
+                isinstance(e, (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)) and rule.get("notification_on_error", True)
             ):
             notif.send(
                 title="Webpage Check Failed",
@@ -218,9 +218,9 @@ def check_api_availability(api_url, rule, previous_data, notif, previous_data_pa
 
     except Exception as e:
         logging.error(f"Error fetching API data from {api_url}: {e}")
-        if not isinstance(e, (requests.exceptions.HTTPError, requests.exceptions.ConnectionError)) or \
+        if not isinstance(e, (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)) or \
             (
-                isinstance(e, (requests.exceptions.HTTPError, requests.exceptions.ConnectionError)) and rule.get("notification_on_error", True)
+                isinstance(e, (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)) and rule.get("notification_on_error", True)
             ):
             notif.send(
                 title="API Check Failed",
