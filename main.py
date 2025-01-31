@@ -10,7 +10,7 @@ from vha_toolbox import seconds_to_humantime
 
 from check_version import check_for_update
 from checker import check_availability
-from notification_service import NotificationService
+from notification_service import NotificationService, NotificationManager
 
 logging.basicConfig(
     level=logging.INFO,
@@ -118,12 +118,8 @@ def send_daily_discord_notification(config_service):
             message_lines.append(f"  - Fail: `{counts.get('fail', 0)}`")
         message = "\n".join(message_lines)
 
-        notif = config_service.get_config("notification_service")
-        notif.send(
-            title="Daily Monitoring Summary",
-            description=message,
-            color='#0dcaf0'
-        )
+        notif_manager = config_service.get_config("notification_manager")
+        notif_manager.send("daily_summary", description=message)
         logging.info(f"Daily notification sent for {yesterday}")
     update_notification_status(storage_dir, yesterday, status=True)
 
@@ -145,6 +141,9 @@ if __name__ == "__main__":
     config_service.set_config("notification_service", create_notification_service(discord_webhook_url, mention_users, current_version))
     notif = config_service.get_config("notification_service")
 
+    config_service.set_config("notification_manager", NotificationManager(notif))
+    notif_manager = config_service.get_config("notification_manager")
+
     rules_formatted = "\n".join(
         f"- **URL**: {url}\n"
         + (f"  - **JSON Selectors**:\n" + "\n".join(f"    - {sel}" for sel in rule['json_selectors']) + "\n" 
@@ -153,19 +152,9 @@ if __name__ == "__main__":
         if rule.get("webpage_check") else "")
         for url, rule in rules.items()
     )
-    notif.send(
-        title="Content Monitoring System Started",
-        description="The content monitoring system has started successfully.",
-        fields={"Interval": seconds_to_humantime(interval), "Rules": rules_formatted},
-        color='#0dcaf0',
-    )
+    notif_manager.send("system_start", fields={"Interval": seconds_to_humantime(interval), "Rules": rules_formatted})
     if isinstance(update, tuple):
-        notif.send(
-            title="New Version Available",
-            description="A new version of the content monitoring system is available. Please update.",
-            fields={"Current Version": update[0], "Latest Version": update[1]},
-            color='#ffc107',
-        )
+        notif_manager.send("update_available", fields={"Current Version": update[0], "Latest Version": update[1]},)
     del rules_formatted, update, current_version
     logging.info(f"Starting checks with interval of {interval} seconds")
     

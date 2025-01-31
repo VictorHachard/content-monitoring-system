@@ -34,11 +34,9 @@ def update_daily_log_by_url(url, success=0, fail=0):
     daily_log = load_data(log_file)
     today = datetime.now().strftime('%Y-%m-%d')
     
-    # Ensure today's entry exists
     if today not in daily_log:
         daily_log[today] = {}
     
-    # Ensure there's an entry for the given URL
     if url not in daily_log[today]:
         daily_log[today][url] = {"success": 0, "fail": 0}
     
@@ -73,6 +71,7 @@ def check_webpage_availability(url, rule, selenium_session, previous_data, missi
     """
     current_data = previous_data.copy()
     configuration_service = ConfigurationService()
+    notification_manager = configuration_service.get_config("notification_manager")
     selectors = rule.get("selectors", [])
     use_selenium = rule.get("use_selenium", False)
 
@@ -98,13 +97,7 @@ def check_webpage_availability(url, rule, selenium_session, previous_data, missi
                 if key not in missing_data or not missing_data[key].get("alert_sent", False):
                     missing_data[key] = {"url": url, "selector": selector, "timestamp": time.time(), "alert_sent": True}
                     save_data(missing_data_path, missing_data)
-                    notif.send(
-                        title="Element Missing Alert",
-                        description=f"The element specified by the selector `{selector}` is missing on the page.",
-                        url=url,
-                        fields={"URL": url, "Selector": f"`{selector}`"},
-                        color='#ffc107',
-                    )
+                    notification_manager.send("element_missing", url=url, fields={"URL": url, "Selector": f"`{selector}`"})
                 continue
 
             html_content = element.prettify()
@@ -116,46 +109,28 @@ def check_webpage_availability(url, rule, selenium_session, previous_data, missi
                 logging.info(f"Element returned for {url} with selector {selector}")
                 del missing_data[key]
                 save_data(missing_data_path, missing_data)
-                notif.send(
-                    title="Element Returned Notification",
-                    description=f"The element specified by the selector `{selector}` has returned to the page.",
-                    url=url,
-                    fields={"URL": url, "Selector": f"`{selector}`"},
-                    color='#ffc107',
-                )
+                notification_manager.send("element_returned", url=url, fields={"URL": url, "Selector": f"`{selector}`"})
 
             if key not in previous_data:
                 logging.info(f"First-time change detected for {url} with selector {selector}")
-                notif.send(
-                    title="First-Time Webpage Content Detected",
-                    description="Tracking webpage content for the first time.",
-                    url=url,
-                    fields={
-                        "URL": url,
-                        "Selector": f"`{selector}`",
-                        "Data": f"`{text_content}`",
-                    },
-                    color='#0dcaf0',
-                )
+                notification_manager.send("first_time_webpage", url=url, fields={
+                    "URL": url,
+                    "Selector": f"`{selector}`",
+                    "Data": f"`{text_content}`",
+                })
             elif previous_data[key]["html"] != html_content:
                 logging.info(f"Change detected for {url} with selector {selector}")
                 if 'timestamp' in previous_data[key]:
                     last_updated = datetime.fromtimestamp(previous_data[key]['timestamp'], timezone.utc).strftime('%Y-%m-%d %H:%M:%S') + ' UTC'
                 else:
                     last_updated = "N/A"
-                notif.send(
-                    title="Webpage Content Change Detected",
-                    description="A change was detected on the webpage.",
-                    url=url,
-                    fields={
-                        "URL": url,
-                        "Selector": f"`{selector}`",
-                        "Old Data": f"`{previous_data[key]['text']}`" if previous_data[key]['text'] else "N/A",
-                        "New Data": f"`{text_content}`",
-                        "Last Updated": last_updated,
-                    },
-                    color='#0d6efd',
-                )
+                notification_manager.send("content_change", url=url, fields={
+                    "URL": url,
+                    "Selector": f"`{selector}`",
+                    "Old Data": f"`{previous_data[key]['text']}`" if previous_data[key]['text'] else "N/A",
+                    "New Data": f"`{text_content}`",
+                    "Last Updated": last_updated,
+                })
             else:
                 logging.info(f"No change detected for {url} with selector {selector}")
         
@@ -169,13 +144,7 @@ def check_webpage_availability(url, rule, selenium_session, previous_data, missi
             (
                 isinstance(e, (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)) and rule.get("notification_on_error", True)
             ):
-            notif.send(
-                title="Webpage Check Failed",
-                description=f"An error occurred while checking {url}.",
-                fields={"Exception": f"`{e}`"},
-                url=url,
-                color='#dc3545'
-            )
+            notification_manager.send("webpage_check_failed", url=url, fields={"URL": url, "Exception": f"`{e}`"})
 
 
 def check_api_availability(api_url, rule, previous_data, notif, previous_data_path):
@@ -184,6 +153,7 @@ def check_api_availability(api_url, rule, previous_data, notif, previous_data_pa
     """
     current_data = previous_data.copy()
     configuration_service = ConfigurationService()
+    notification_manager = configuration_service.get_config("notification_manager")
     headers = {
         "User-Agent": configuration_service.get_config("api_user_agent"),
         "Accept": "application/json"
@@ -210,34 +180,24 @@ def check_api_availability(api_url, rule, previous_data, notif, previous_data_pa
 
             if old_value is None:
                 logging.info(f"First-time API tracking for {api_url} selector `{selector}`")
-                notif.send(
-                    title="First-Time API Content Detected",
-                    description=f"Tracking `{selector}` for the first time.",
-                    fields={
-                        "URL": api_url,
-                        "Selector": selector,
-                        "Value": str(new_value)
-                    },
-                    color='#0dcaf0'
-                )
+                notification_manager.send("first_time_api", url=api_url, fields={
+                    "URL": api_url,
+                    "Selector": f"`{selector}`",
+                    "Value": f"`{new_value}`",
+                })
             elif old_value != new_value:
                 logging.info(f"API data changed for {api_url} selector `{selector}`")
                 if 'timestamp' in previous_data[key]:
                     last_updated = datetime.fromtimestamp(previous_data[key]['timestamp'], timezone.utc).strftime('%Y-%m-%d %H:%M:%S') + ' UTC'
                 else:
                     last_updated = "N/A"
-                notif.send(
-                    title="API Content Change Detected",
-                    description="A change was detected on the API.",
-                    fields={
-                        "URL": api_url,
-                        "Selector": selector,
-                        "Old Value": str(old_value),
-                        "New Value": str(new_value),
-                        "Last Updated": last_updated,
-                    },
-                    color='#0d6efd'
-                )
+                notification_manager.send("api_content_change", url=api_url, fields={
+                    "URL": api_url,
+                    "Selector": f"`{selector}`",
+                    "Old Value": f"`{old_value}`",
+                    "New Value": f"`{new_value}`",
+                    "Last Updated": last_updated
+                })
             else:
                 logging.info(f"No change detected for {api_url} with selector `{selector}`")
         
@@ -251,12 +211,7 @@ def check_api_availability(api_url, rule, previous_data, notif, previous_data_pa
             (
                 isinstance(e, (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)) and rule.get("notification_on_error", True)
             ):
-            notif.send(
-                title="API Check Failed",
-                description="Error fetching API data.",
-                fields={"URL": api_url, "Exception": f"`{e}`"},
-                color='#dc3545'
-            )
+            notification_manager.send("api_check_failed", url=api_url, fields={"URL": api_url, "Exception": f"`{e}`"})
 
 
 def extract_json_value(json_data, path):
