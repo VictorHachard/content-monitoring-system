@@ -3,6 +3,7 @@
 This repository provides a Docker Compose setup for the Content Monitoring System, which monitors specified web pages for content changes and sends notifications via Discord webhook.
 
 ## Features
+
 - Monitor webpage content using CSS selectors.
 - Monitor API response content using JSON selectors.
 - Optionally use Selenium for pages that require full rendering before DOM access.
@@ -33,11 +34,13 @@ This repository provides a Docker Compose setup for the Content Monitoring Syste
     {
       "https://example.com/page": {
         "webpage_check": true,
+        "notification_on_error": false,
         "selectors": ["div.test-selector"],
         "use_selenium": false
       },
       "https://api.example.com/page": {
         "api_check": true,
+        "notification_on_error": false,
         "json_selectors": ["searchedProducts.0.name"]
       }
     }
@@ -47,6 +50,8 @@ This repository provides a Docker Compose setup for the Content Monitoring Syste
       - `use_selenium`: A boolean value that specifies whether to use Selenium for monitoring. Selenium is required if the webpage needs to be fully loaded before accessing the DOM. The default value is `false`.
     - `api_check`: A boolean value that specifies whether to monitor the API response content.
       - `json_selectors`: An array of JSON selectors to monitor.
+    - Both `webpage_check` and `api_check` settings:
+      - `notification_on_error`: A boolean value that specifies whether to send a notification when an request error occurs. The default value is `true`.
 
 ## Volumes
 

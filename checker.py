@@ -138,13 +138,17 @@ def check_webpage_availability(url, rule, selenium_session, previous_data, missi
 
     except Exception as e:
         logging.error(f"Error fetching webpage content from {url}: {e}")
-        notif.send(
-            title="Webpage Check Failed",
-            description=f"An error occurred while checking {url}.",
-            fields={"Exception": f"`{e}`"},
-            url=url,
-            color='#dc3545'
-        )
+        if not isinstance(e, requests.exceptions.HTTPError) or \
+            (
+                isinstance(e, requests.exceptions.HTTPError) and rule.get("notification_on_error", True)
+            ):
+            notif.send(
+                title="Webpage Check Failed",
+                description=f"An error occurred while checking {url}.",
+                fields={"Exception": f"`{e}`"},
+                url=url,
+                color='#dc3545'
+            )
 
 
 def check_api_availability(api_url, rule, previous_data, notif, previous_data_path):
@@ -212,12 +216,16 @@ def check_api_availability(api_url, rule, previous_data, notif, previous_data_pa
 
     except Exception as e:
         logging.error(f"Error fetching API data from {api_url}: {e}")
-        notif.send(
-            title="API Check Failed",
-            description="Error fetching API data.",
-            fields={"URL": api_url, "Exception": f"`{e}`"},
-            color='#dc3545'
-        )
+        if not isinstance(e, requests.exceptions.HTTPError) or \
+            (
+                isinstance(e, requests.exceptions.HTTPError) and rule.get("notification_on_error", True)
+            ):
+            notif.send(
+                title="API Check Failed",
+                description="Error fetching API data.",
+                fields={"URL": api_url, "Exception": f"`{e}`"},
+                color='#dc3545'
+            )
 
 
 def extract_json_value(json_data, path):
