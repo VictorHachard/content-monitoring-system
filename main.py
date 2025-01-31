@@ -119,7 +119,7 @@ def send_daily_discord_notification(config_service):
         message = "\n".join(message_lines)
 
         notif_manager = config_service.get_config("notification_manager")
-        notif_manager.send("daily_summary", description=message)
+        notif_manager.send("daily_summary", fields={"Date": yesterday, "Summary": message})
         logging.info(f"Daily notification sent for {yesterday}")
     update_notification_status(storage_dir, yesterday, status=True)
 

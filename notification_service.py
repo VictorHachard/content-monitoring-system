@@ -72,12 +72,12 @@ class NotificationManager:
             },
             "element_missing": {
                 "title": "Missing Element Alert",
-                "description": "The element specified by selector `{selector}` is missing on the page.",
+                "description": "The element specified if missing from the page.",
                 "color": "#ffc107",
             },
             "element_returned": {
                 "title": "Element Returned Notification",
-                "description": "The element specified by selector `{selector}` has returned to the page.",
+                "description": "The element specified has returned to the page.",
                 "color": "#ffc107",
             },
             "content_change": {
@@ -107,7 +107,7 @@ class NotificationManager:
             },
         }
 
-    def send(self, key, url=None, description=None, fields=None):
+    def send(self, key, url=None, fields=None):
         """
         Sends a notification using the template identified by `key`.
         """
@@ -116,7 +116,7 @@ class NotificationManager:
             raise ValueError(f"Notification template not found for key '{key}'")
 
         title = template["title"]
-        description = description or template["description"]
+        description = template["description"]
         color = template.get("color", "#0dcaf0")
         fields = fields or {}
 
