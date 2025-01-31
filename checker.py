@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 import requests
 from bs4 import BeautifulSoup
+from configuration_service import ConfigurationService
 from json_path_error import JSONPathError
 from selenium_session import SeleniumSession
 
@@ -23,7 +24,11 @@ def load_data(file_path):
     return {}
 
 
-def check_availability(storage_dir, notif, rules):
+def check_availability():
+    config_service = ConfigurationService()
+    storage_dir = config_service.get_config("storage_dir")
+    rules = config_service.get_config("rules")
+    notif = config_service.get_config("notification_service")
     selenium_session = SeleniumSession() if any(rule.get("use_selenium", False) for rule in rules.values()) else None
 
     previous_data_path = os.path.join(storage_dir, 'previous_data.json')
@@ -120,7 +125,7 @@ def check_webpage_availability(url, rule, selenium_session, previous_data, missi
         save_data(previous_data_path, current_data)
 
     except Exception as e:
-        logging.error(f"Error checking {url}: {e}")
+        logging.error(f"Error fetching webpage content from {url}: {e}")
         notif.send(
             title="Webpage Check Failed",
             description=f"An error occurred while checking {url}.",
@@ -191,7 +196,7 @@ def check_api_availability(api_url, rule, previous_data, notif, previous_data_pa
         
         save_data(previous_data_path, current_data)
 
-    except requests.exceptions.RequestException as e:
+    except Exception as e:
         logging.error(f"Error fetching API data from {api_url}: {e}")
         notif.send(
             title="API Check Failed",
