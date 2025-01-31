@@ -17,6 +17,24 @@ logging.basicConfig(
 )
 
 
+def validate_rules(rules):
+    """Validates that each rule has either 'api_check' or 'webpage_check' with required fields."""
+    if not isinstance(rules, dict):
+        raise ValueError("Rules should be a dictionary.")
+
+    for url, rule in rules.items():
+        if "api_check" not in rule and "webpage_check" not in rule:
+            raise ValueError(f"Rule for {url} must specify either 'api_check' or 'webpage_check'.")
+
+        if rule.get("api_check"):
+            if "json_selectors" not in rule or not isinstance(rule["json_selectors"], list) or not rule["json_selectors"]:
+                raise ValueError(f"API rule for {url} requires a non-empty 'json_selectors' list.")
+
+        if rule.get("webpage_check"):
+            if "selectors" not in rule or not isinstance(rule["selectors"], list) or not rule["selectors"]:
+                raise ValueError(f"Webpage rule for {url} requires a non-empty 'selectors' list.")
+
+
 if __name__ == "__main__":
     logging.info("Starting Content Monitoring System")
     update = check_for_update()
@@ -39,9 +57,10 @@ if __name__ == "__main__":
     # Parse rules JSON
     try:
         rules = json.loads(args.rules)
-    except json.JSONDecodeError as e:
-        logging.error(f"Failed to decode rules from arguments: {e}")
-        rules = {}
+        validate_rules(rules)
+    except (json.JSONDecodeError, ValueError) as e:
+        logging.error(f"Failed to parse or validate rules: {e}")
+        exit(1)
 
     if not rules:
         logging.error("No rules defined. Exiting.")
@@ -57,7 +76,10 @@ if __name__ == "__main__":
             footer = "Content monitoring system"
         notif = NotificationService(discord_webhook_url, mention_users, footer=footer)
         rules_formatted = "\n".join(
-            f"- **URL**: {url}\n  - **Selectors**: {', '.join(rule['selectors'])}\n  - **Use Selenium**: {'Yes' if rule['use_selenium'] else 'No'}"
+            f"- **URL**: {url}\n"
+            + (f"  - **Selectors**: {', '.join(rule['selectors'])}\n" if rule.get("webpage_check") else "")
+            + (f"  - **Use Selenium**: {'Yes' if rule.get('use_selenium', False) else 'No'}\n" if rule.get("webpage_check") else "")
+            + (f"  - **JSON Selectors**: {', '.join(rule['json_selectors'])}\n" if rule.get("api_check") else "")
             for url, rule in rules.items()
         )
         notif.send(

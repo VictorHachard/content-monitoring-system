@@ -1,11 +1,6 @@
 services:
   content_monitoring_system:
-    build: .
-    develop:
-      watch: 
-        - path: ./
-          action: sync+restart
-          target: /app
+    image: ghcr.io/VictorHachard/cms:v1.0.0
     container_name: content_monitoring_system
     environment:
       DISCORD_WEBHOOK_URL: "https://discord.com/api/webhooks/1234567890/ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -27,3 +22,4 @@ services:
 
 volumes:
   app_data:
+  

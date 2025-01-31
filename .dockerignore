@@ -10,3 +10,4 @@ __pycache__/
 .gitattributes
 .gitignore
 README.md
+docker-compose.prod.yml
