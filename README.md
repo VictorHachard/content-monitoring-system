@@ -31,11 +31,18 @@ This repository provides a Docker Compose setup for the Content Monitoring Syste
         "webpage_check": true,
         "selectors": ["div.test-selector"],
         "use_selenium": false
+      },
+      "https://api.example.com/page": {
+        "api_check": true,
+        "json_selectors": ["searchedProducts.0.name"]
       }
     }
     ```
-    - `selectors`: An array of CSS selectors to monitor.
-    - `use_selenium`: A boolean value that specifies whether to use Selenium for monitoring. Selenium is required if the webpage needs to be fully loaded before accessing the DOM. The default value is `false`.
+    - `webpage_check`: A boolean value that specifies whether to monitor the webpage content.
+      - `selectors`: An array of CSS selectors to monitor.
+      - `use_selenium`: A boolean value that specifies whether to use Selenium for monitoring. Selenium is required if the webpage needs to be fully loaded before accessing the DOM. The default value is `false`.
+    - `api_check`: A boolean value that specifies whether to monitor the API response content.
+      - `json_selectors`: An array of JSON selectors to monitor.
 
 ## Volumes
 
@@ -54,9 +61,14 @@ services:
       RULES: |
         {
           "https://example.com/page": {
-              "selectors": ["div.test-selector"],
-              "use_selenium": false
-            }
+            "webpage_check": true,
+            "selectors": ["div.test-selector"],
+            "use_selenium": false
+          },
+          "https://api.example.com/page": {
+            "api_check": true,
+            "json_selectors": ["searchedProducts.0.name"]
+          }
         }
     volumes:
       - app_data:/app/data
