@@ -29,6 +29,9 @@ class ConfigurationService:
         if args.interval < 5:
             logging.error("Interval must be at least 5 seconds.")
             exit(1)
+        if args.webpage_timeout < 0 or args.api_timeout < 0:
+            logging.error("Timeout must be a positive integer.")
+            exit(1)
 
         self.set_config("storage_dir", args.storage_dir)
         self.set_config("discord_webhook_url", args.webhook)
@@ -48,6 +51,9 @@ class ConfigurationService:
         self.set_config("webpage_user_agent", args.webpage_user_agent)
         #self.set_config("webpage_selenium_user_agent", args.webpage_selenium_user_agent)
         self.set_config("api_user_agent", args.api_user_agent)
+
+        self.set_config("webpage_timeout", args.webpage_timeout)
+        self.set_config("api_timeout", args.api_timeout)
     
     def validate_rules(self, rules):
         """Validates that each rule has either 'api_check' or 'webpage_check' with required fields."""

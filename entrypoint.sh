@@ -30,6 +30,8 @@ CMD=(
 [ -n "$WEBPAGE_USER_AGENT" ] && CMD+=("--webpage-user-agent" "$WEBPAGE_USER_AGENT")
 # [ -n "$WEBPAGE_SELENIUM_USER_AGENT" ] && CMD+=("--webpage-selenium-user-agent" "$WEBPAGE_SELENIUM_USER_AGENT")
 [ -n "$API_USER_AGENT" ] && CMD+=("--api-user-agent" "$API_USER_AGENT")
+[ -n "$WEBPAGE_TIMEOUT" ] && CMD+=("--webpage-timeout" "$WEBPAGE_TIMEOUT")
+[ -n "$API_TIMEOUT" ] && CMD+=("--api-timeout" "$API_TIMEOUT")
 
 # Run the application
 "${CMD[@]}"

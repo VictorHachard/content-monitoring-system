@@ -28,6 +28,8 @@ This repository provides a Docker Compose setup for the Content Monitoring Syste
     ```
   - `WEBPAGE_USER_AGENT`: The user agent string to use for webpage requests. There is a default value.
   - `API_USER_AGENT`: The user agent string to use for API requests. There is a default value.
+  - `WEBPAGE_TIMEOUT`: The timeout in seconds for webpage requests. The default value is `5`.
+  - `API_TIMEOUT`: The timeout in seconds for API requests. The default value is `5`.
   - `INTERVAL`: Specifies the monitoring interval in seconds. The default value is `300`.
   - `RULES`: A JSON string that configures the selectors for monitored pages. Example configuration:
     ```json

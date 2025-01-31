@@ -47,6 +47,9 @@ def parse_arguments():
         help="User agent to use for API checks."
     )
 
+    parser.add_argument('--webpage-timeout', type=int, default=5, help="Timeout for webpage checks in seconds.")
+    parser.add_argument('--api-timeout', type=int, default=5, help="Timeout for API checks in seconds.")
+
     return parser.parse_args()
 
 

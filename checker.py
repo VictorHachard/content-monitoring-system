@@ -48,6 +48,7 @@ def check_webpage_availability(url, rule, selenium_session, previous_data, missi
     Check the availability of a webpage and compare the HTML content with the previous data.
     """
     current_data = previous_data.copy()
+    configuration_service = ConfigurationService()
     selectors = rule.get("selectors", [])
     use_selenium = rule.get("use_selenium", False)
 
@@ -56,9 +57,9 @@ def check_webpage_availability(url, rule, selenium_session, previous_data, missi
             page_content = selenium_session.fetch_page(url)
         else:
             headers = {
-                "User-Agent": ConfigurationService().get_config("webpage_user_agent")
+                "User-Agent": configuration_service.get_config("webpage_user_agent")
             }
-            response = requests.get(url, headers=headers, timeout=5)
+            response = requests.get(url, headers=headers, timeout=configuration_service.get_config("webpage_timeout"))
             response.raise_for_status()
             page_content = response.text
     
@@ -138,9 +139,9 @@ def check_webpage_availability(url, rule, selenium_session, previous_data, missi
 
     except Exception as e:
         logging.error(f"Error fetching webpage content from {url}: {e}")
-        if not isinstance(e, requests.exceptions.HTTPError) or \
+        if not isinstance(e, (requests.exceptions.HTTPError, requests.exceptions.ConnectionError)) or \
             (
-                isinstance(e, requests.exceptions.HTTPError) and rule.get("notification_on_error", True)
+                isinstance(e, (requests.exceptions.HTTPError, requests.exceptions.ConnectionError)) and rule.get("notification_on_error", True)
             ):
             notif.send(
                 title="Webpage Check Failed",
@@ -156,13 +157,14 @@ def check_api_availability(api_url, rule, previous_data, notif, previous_data_pa
     Check the availability of an API endpoint and compare the JSON data with the previous data.
     """
     current_data = previous_data.copy()
+    configuration_service = ConfigurationService()
     headers = {
-        "User-Agent": ConfigurationService().get_config("api_user_agent"),
+        "User-Agent": configuration_service.get_config("api_user_agent"),
         "Accept": "application/json"
     }
 
     try:
-        response = requests.get(api_url, headers=headers, timeout=5)
+        response = requests.get(api_url, headers=headers, timeout=configuration_service.get_config("api_timeout"))
         response.raise_for_status()
         data = response.json()
 
@@ -216,9 +218,9 @@ def check_api_availability(api_url, rule, previous_data, notif, previous_data_pa
 
     except Exception as e:
         logging.error(f"Error fetching API data from {api_url}: {e}")
-        if not isinstance(e, requests.exceptions.HTTPError) or \
+        if not isinstance(e, (requests.exceptions.HTTPError, requests.exceptions.ConnectionError)) or \
             (
-                isinstance(e, requests.exceptions.HTTPError) and rule.get("notification_on_error", True)
+                isinstance(e, (requests.exceptions.HTTPError, requests.exceptions.ConnectionError)) and rule.get("notification_on_error", True)
             ):
             notif.send(
                 title="API Check Failed",
