@@ -113,9 +113,9 @@ def send_daily_discord_notification(config_service):
     if summary:
         message_lines = [f"Daily Summary for {yesterday}"]
         for url, counts in summary.items():
-            message_lines.append(f"- {url}")
-            message_lines.append(f"    - Success: `{counts.get('success', 0)}`")
-            message_lines.append(f"    - Fail: `{counts.get('fail', 0)}`")
+            message_lines.append(f"- **URL**: {url}")
+            message_lines.append(f"  - Success: `{counts.get('success', 0)}`")
+            message_lines.append(f"  - Fail: `{counts.get('fail', 0)}`")
         message = "\n".join(message_lines)
 
         notif = config_service.get_config("notification_service")
