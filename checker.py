@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 import requests
 from bs4 import BeautifulSoup
+from json_path_error import JSONPathError
 from selenium_session import SeleniumSession
 
 
@@ -38,7 +39,7 @@ def check_availability(storage_dir, notif, rules):
 
 
 def check_webpage_availability(url, rule, selenium_session, previous_data, missing_data, notif, previous_data_path, missing_data_path):
-    current_data = {}
+    current_data = previous_data.copy()
     selectors = rule.get("selectors", [])
     use_selenium = rule.get("use_selenium", False)
 
@@ -123,7 +124,7 @@ def check_webpage_availability(url, rule, selenium_session, previous_data, missi
         notif.send(
             title="Webpage Check Failed",
             description=f"An error occurred while checking {url}.",
-            fields={"Exception": str(e)},
+            fields={"Exception": f"`{e}`"},
             url=url,
             color='#dc3545'
         )
@@ -131,7 +132,7 @@ def check_webpage_availability(url, rule, selenium_session, previous_data, missi
 
 def check_api_availability(api_url, rule, previous_data, notif, previous_data_path):
     """Fetch product data from the NVIDIA API and compare with previous results."""
-    current_data = {}
+    current_data = previous_data.copy()
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "application/json"
@@ -160,24 +161,33 @@ def check_api_availability(api_url, rule, previous_data, notif, previous_data_pa
                 notif.send(
                     title="First-Time API Content Detected",
                     description=f"Tracking `{selector}` for the first time.",
-                    fields={"URL": api_url, "Selector": selector, "Value": str(new_value)},
+                    fields={
+                        "URL": api_url,
+                        "Selector": selector,
+                        "Value": str(new_value)
+                    },
                     color='#0dcaf0'
                 )
             elif old_value != new_value:
                 logging.info(f"API data changed for {api_url} selector `{selector}`")
+                if 'timestamp' in previous_data[key]:
+                    last_updated = datetime.fromtimestamp(previous_data[key]['timestamp'], timezone.utc).strftime('%Y-%m-%d %H:%M:%S') + ' UTC'
+                else:
+                    last_updated = "N/A"
                 notif.send(
                     title="API Content Change Detected",
-                    description=f"Detected change in `{selector}`.",
+                    description="A change was detected on the API.",
                     fields={
                         "URL": api_url,
                         "Selector": selector,
                         "Old Value": str(old_value),
-                        "New Value": str(new_value)
+                        "New Value": str(new_value),
+                        "Last Updated": last_updated,
                     },
                     color='#0d6efd'
                 )
             else:
-                logging.info(f"No change detected for {api_url} selector `{selector}`")
+                logging.info(f"No change detected for {api_url} with selector `{selector}`")
         
         save_data(previous_data_path, current_data)
 
@@ -186,7 +196,7 @@ def check_api_availability(api_url, rule, previous_data, notif, previous_data_pa
         notif.send(
             title="API Check Failed",
             description="Error fetching API data.",
-            fields={"URL": api_url, "Exception": str(e)},
+            fields={"URL": api_url, "Exception": f"`{e}`"},
             color='#dc3545'
         )
 
@@ -198,11 +208,11 @@ def extract_json_value(json_data, path):
     try:
         for key in keys:
             if key.isdigit():
-                key = int(key)  # Convert to integer for list indexing
+                key = int(key)
             value = value[key]
         return value
-    except (KeyError, IndexError, TypeError):
-        return None  # Return None if path is invalid
+    except (KeyError, IndexError, TypeError) as e:
+        raise JSONPathError(path, f"Invalid JSON path at {str(e)}")
 
 
 def fetch_page_content(url, use_selenium=False, selenium_session=None):
