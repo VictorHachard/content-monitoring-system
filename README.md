@@ -28,6 +28,7 @@ This repository provides a Docker Compose setup for the Content Monitoring Syste
     ```json
     {
       "https://example.com/page": {
+        "webpage_check": true,
         "selectors": ["div.test-selector"],
         "use_selenium": false
       }
