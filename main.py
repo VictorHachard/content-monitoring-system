@@ -1,7 +1,9 @@
 import time
 import logging
 import json
+import os
 import argparse
+from datetime import datetime, timedelta
 
 from configuration_service import ConfigurationService
 from vha_toolbox import seconds_to_humantime
@@ -61,6 +63,71 @@ def create_notification_service(webhook_url, mention_users, current_version):
     return NotificationService(webhook_url, mention_users, footer=footer)
 
 
+def save_data(file_path, data):
+    """Saves a dictionary as JSON into the given file path."""
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    with open(file_path, 'w') as file:
+        json.dump(data, file, indent=4)
+
+
+def load_data(file_path):
+    """Loads a JSON file and returns a dictionary. Returns an empty dict if the file does not exist."""
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as file:
+            return json.load(file)
+    return {}
+
+
+def has_notification_been_sent(storage_dir, today):
+    """Checks whether today's daily notification has already been sent."""
+    status_file = f"{storage_dir}/daily_notification_status.json"
+    status_data = load_data(status_file)
+    return status_data.get(today, False)
+
+
+def update_notification_status(storage_dir, today, status=True):
+    """Records in a file that today's notification has been sent."""
+    status_file = f"{storage_dir}/daily_notification_status.json"
+    status_data = load_data(status_file)
+    status_data[today] = status
+    save_data(status_file, status_data)
+
+
+def send_daily_discord_notification(config_service):
+    """
+    Sends a Discord notification summarizing yesterday's monitoring results 
+    if it hasn't been sent yet. Expects the daily log file to be stored as 'daily_log.json'
+    in the storage directory.
+    """
+    storage_dir = config_service.get_config("storage_dir")
+    log_file = f"{storage_dir}/daily_log.json"
+    daily_log = load_data(log_file)
+    
+    yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+
+    if has_notification_been_sent(storage_dir, yesterday):
+        logging.info(f"Daily notification for {yesterday} has already been sent.")
+        return
+
+    summary = daily_log.get(yesterday, {})
+    if summary:
+        message_lines = [f"Daily Summary for {yesterday}"]
+        for url, counts in summary.items():
+            message_lines.append(f"- {url}")
+            message_lines.append(f"    - Success: `{counts.get('success', 0)}`")
+            message_lines.append(f"    - Fail: `{counts.get('fail', 0)}`")
+        message = "\n".join(message_lines)
+
+        notif = config_service.get_config("notification_service")
+        notif.send(
+            title="Daily Monitoring Summary",
+            description=message,
+            color='#0dcaf0'
+        )
+        logging.info(f"Daily notification sent for {yesterday}")
+    update_notification_status(storage_dir, yesterday, status=True)
+
+
 if __name__ == "__main__":
     logging.info("Starting Content Monitoring System")
     update = check_for_update()
@@ -101,6 +168,10 @@ if __name__ == "__main__":
         )
     del rules_formatted, update, current_version
     logging.info(f"Starting checks with interval of {interval} seconds")
+    
     while True:
         check_availability()
+        now = datetime.now()
+        if now.hour == 0 and now.minute < 60:
+            send_daily_discord_notification(config_service)
         time.sleep(interval)

@@ -24,6 +24,30 @@ def load_data(file_path):
     return {}
 
 
+def update_daily_log_by_url(url, success=0, fail=0):
+    """
+    Updates (or creates) a daily log file that tracks the number of successful and failed checks by URL.
+    """
+    config_service = ConfigurationService()
+    storage_dir = config_service.get_config("storage_dir")
+    log_file = os.path.join(storage_dir, 'daily_log.json')
+    daily_log = load_data(log_file)
+    today = datetime.now().strftime('%Y-%m-%d')
+    
+    # Ensure today's entry exists
+    if today not in daily_log:
+        daily_log[today] = {}
+    
+    # Ensure there's an entry for the given URL
+    if url not in daily_log[today]:
+        daily_log[today][url] = {"success": 0, "fail": 0}
+    
+    daily_log[today][url]["success"] += success
+    daily_log[today][url]["fail"] += fail
+    
+    save_data(log_file, daily_log)
+
+
 def check_availability():
     config_service = ConfigurationService()
     storage_dir = config_service.get_config("storage_dir")
@@ -36,9 +60,9 @@ def check_availability():
 
     for url, rule in rules.items():
         previous_data = load_data(previous_data_path)
-        if rule.get("api_check"):
+        if rule.get("api_check", False):
             check_api_availability(url, rule, previous_data, notif, previous_data_path)
-        elif rule.get("webpage_check"):
+        elif rule.get("webpage_check", False):
             missing_data = load_data(missing_data_path)
             check_webpage_availability(url, rule, selenium_session, previous_data, missing_data, notif, previous_data_path, missing_data_path)
 
@@ -136,9 +160,11 @@ def check_webpage_availability(url, rule, selenium_session, previous_data, missi
                 logging.info(f"No change detected for {url} with selector {selector}")
         
         save_data(previous_data_path, current_data)
+        update_daily_log_by_url(url, success=1)
 
     except Exception as e:
         logging.error(f"Error fetching webpage content from {url}: {e}")
+        update_daily_log_by_url(url, fail=1)
         if not isinstance(e, (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)) or \
             (
                 isinstance(e, (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)) and rule.get("notification_on_error", True)
@@ -170,6 +196,7 @@ def check_api_availability(api_url, rule, previous_data, notif, previous_data_pa
 
         if not data:
             logging.warning(f"No data found for {api_url}")
+            update_daily_log_by_url(api_url, success=1)
             return
         
         json_selectors = rule.get("json_selectors", [])
@@ -215,9 +242,11 @@ def check_api_availability(api_url, rule, previous_data, notif, previous_data_pa
                 logging.info(f"No change detected for {api_url} with selector `{selector}`")
         
         save_data(previous_data_path, current_data)
+        update_daily_log_by_url(api_url, success=1)
 
     except Exception as e:
         logging.error(f"Error fetching API data from {api_url}: {e}")
+        update_daily_log_by_url(api_url, fail=1)
         if not isinstance(e, (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)) or \
             (
                 isinstance(e, (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.Timeout)) and rule.get("notification_on_error", True)
@@ -231,7 +260,10 @@ def check_api_availability(api_url, rule, previous_data, notif, previous_data_pa
 
 
 def extract_json_value(json_data, path):
-    """Extracts a value from a nested JSON object using dot notation (e.g., 'searchedProducts.productDetails.0.productPrice')."""
+    """
+    Extracts a value from a nested JSON object using dot notation
+    (e.g., 'searchedProducts.productDetails.0.productPrice').
+    """
     keys = path.split(".")
     value = json_data
     try:
