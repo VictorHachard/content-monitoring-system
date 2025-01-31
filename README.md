@@ -4,8 +4,10 @@ This repository provides a Docker Compose setup for the Content Monitoring Syste
 
 ## Features
 - Monitor webpage content using CSS selectors.
+- Monitor API response content using JSON selectors.
 - Optionally use Selenium for pages that require full rendering before DOM access.
 - Get real-time notifications through Discord webhooks.
+- Mention specific users in notifications.
 
 ## Overview
 
@@ -23,6 +25,8 @@ This repository provides a Docker Compose setup for the Content Monitoring Syste
     ```
     1234567890,0987654321
     ```
+  - `WEBPAGE_USER_AGENT`: The user agent string to use for webpage requests. There is a default value.
+  - `API_USER_AGENT`: The user agent string to use for API requests. There is a default value.
   - `INTERVAL`: Specifies the monitoring interval in seconds. The default value is `300`.
   - `RULES`: A JSON string that configures the selectors for monitored pages. Example configuration:
     ```json

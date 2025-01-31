@@ -44,12 +44,24 @@ def check_availability():
 
 
 def check_webpage_availability(url, rule, selenium_session, previous_data, missing_data, notif, previous_data_path, missing_data_path):
+    """
+    Check the availability of a webpage and compare the HTML content with the previous data.
+    """
     current_data = previous_data.copy()
     selectors = rule.get("selectors", [])
     use_selenium = rule.get("use_selenium", False)
 
     try:
-        page_content = fetch_page_content(url, use_selenium, selenium_session)
+        if use_selenium and selenium_session:
+            page_content = selenium_session.fetch_page(url)
+        else:
+            headers = {
+                "User-Agent": ConfigurationService().get_config("webpage_user_agent")
+            }
+            response = requests.get(url, headers=headers, timeout=5)
+            response.raise_for_status()
+            page_content = response.text
+    
         soup = BeautifulSoup(page_content, 'html.parser')
 
         for selector in selectors:
@@ -136,10 +148,12 @@ def check_webpage_availability(url, rule, selenium_session, previous_data, missi
 
 
 def check_api_availability(api_url, rule, previous_data, notif, previous_data_path):
-    """Fetch product data from the NVIDIA API and compare with previous results."""
+    """
+    Check the availability of an API endpoint and compare the JSON data with the previous data.
+    """
     current_data = previous_data.copy()
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "User-Agent": ConfigurationService().get_config("api_user_agent"),
         "Accept": "application/json"
     }
 
@@ -218,16 +232,3 @@ def extract_json_value(json_data, path):
         return value
     except (KeyError, IndexError, TypeError) as e:
         raise JSONPathError(path, f"Invalid JSON path at {str(e)}")
-
-
-def fetch_page_content(url, use_selenium=False, selenium_session=None):
-    if use_selenium and selenium_session:
-        return selenium_session.fetch_page(url)
-    else:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        }
-        response = requests.get(url, headers=headers, timeout=5)
-        response.raise_for_status()
-        return response.text
-    

@@ -16,13 +16,20 @@ STORAGE_DIR="/app/data"
 # Ensure the storage directory exists
 mkdir -p "$STORAGE_DIR"
 
-# Build the base command
-CMD=("python" "./main.py" "--storage-dir" "$STORAGE_DIR" "--webhook" "$DISCORD_WEBHOOK_URL" "--interval" "${INTERVAL:-300}" "--rules" "$RULES")
+# Build the base command with improved readability
+CMD=(
+  "python" "./main.py"
+  "--storage-dir" "$STORAGE_DIR"
+  "--webhook" "$DISCORD_WEBHOOK_URL"
+  "--interval" "${INTERVAL:-300}"
+  "--rules" "$RULES"
+)
 
-# Add --mention_users parameter if MENTION_USERS is set
-if [ -n "$MENTION_USERS" ]; then
-  CMD+=("--mention-users" "$MENTION_USERS")
-fi
+# Add optional parameters if they are set
+[ -n "$MENTION_USERS" ] && CMD+=("--mention-users" "$MENTION_USERS")
+[ -n "$WEBPAGE_USER_AGENT" ] && CMD+=("--webpage-user-agent" "$WEBPAGE_USER_AGENT")
+# [ -n "$WEBPAGE_SELENIUM_USER_AGENT" ] && CMD+=("--webpage-selenium-user-agent" "$WEBPAGE_SELENIUM_USER_AGENT")
+[ -n "$API_USER_AGENT" ] && CMD+=("--api-user-agent" "$API_USER_AGENT")
 
 # Run the application
 "${CMD[@]}"

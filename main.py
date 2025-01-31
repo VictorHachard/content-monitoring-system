@@ -28,9 +28,24 @@ def parse_arguments():
     parser.add_argument('--interval', type=int, default=300, help="Interval between checks in seconds.")
     parser.add_argument('--rules', type=str, required=True, help="JSON string defining the rules for availability checks.")
 
-    parser.add_argument('--webpage-user-agent', type=str, help="User agent to use for webpage checks.")
-    parser.add_argument('--webpage-selenium-user-agent', type=str, help="User agent to use for webpage checks with Selenium.")
-    parser.add_argument('--api-user-agent', type=str, help="User agent to use for API checks.")
+    parser.add_argument(
+        '--webpage-user-agent',
+        type=str,
+        default="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        help="User agent to use for webpage checks."
+    )
+    #parser.add_argument(
+    #    '--webpage-selenium-user-agent',
+    #    type=str,
+    #    default="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    #    help="User agent to use for webpage checks with Selenium."
+    #)
+    parser.add_argument(
+        '--api-user-agent',
+        type=str,
+        default="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        help="User agent to use for API checks."
+    )
 
     return parser.parse_args()
 

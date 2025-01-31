@@ -46,7 +46,7 @@ class ConfigurationService:
 
         # Optional user agents
         self.set_config("webpage_user_agent", args.webpage_user_agent)
-        self.set_config("webpage_selenium_user_agent", args.webpage_selenium_user_agent)
+        #self.set_config("webpage_selenium_user_agent", args.webpage_selenium_user_agent)
         self.set_config("api_user_agent", args.api_user_agent)
     
     def validate_rules(self, rules):
