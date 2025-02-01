@@ -11,11 +11,14 @@ class NotificationService:
         self.mention_users = mention_users or []
         self.footer = footer
 
-    def send(self, title, description, url=None, fields=None, color=None):
+    def send(self, title, description, url=None, fields=None, color=None, mention_user=True):
         """
         Send a Discord notification using the webhook URL.
         """
-        mention_content = " ".join([f"<@{user}>" for user in self.mention_users]) if self.mention_users else ""
+        if mention_user:
+            mention_content = " ".join([f"<@{user}>" for user in self.mention_users]) if self.mention_users else ""
+        else:
+            mention_content = None
 
         try:
             webhook = DiscordWebhook(url=self.webhook_url, content=mention_content)
@@ -54,16 +57,19 @@ class NotificationManager:
                 "title": "Content Monitoring System Started",
                 "description": "The content monitoring system has started successfully.",
                 "color": "#0dcaf0",
+                "mention_user": False,
             },
             "update_available": {
                 "title": "New Version Available",
                 "description": "A new version of the content monitoring system is available. Please update.",
                 "color": "#ffc107",
+                "mention_user": False,
             },
             "daily_summary": {
                 "title": "Daily Monitoring Summary",
                 "description": "Summary of monitoring results for the day.",
                 "color": "#0dcaf0",
+                "mention_user": False,
             },
             "first_time_webpage": {
                 "title": "First-Time Webpage Content Detected",
@@ -74,11 +80,13 @@ class NotificationManager:
                 "title": "Missing Element Alert",
                 "description": "The element specified if missing from the page.",
                 "color": "#ffc107",
+                "mention_user": False,
             },
             "element_returned": {
                 "title": "Element Returned Notification",
                 "description": "The element specified has returned to the page.",
                 "color": "#ffc107",
+                "mention_user": False,
             },
             "content_change": {
                 "title": "Webpage Content Change Detected",
@@ -99,11 +107,13 @@ class NotificationManager:
                 "title": "Webpage Check Failed",
                 "description": "Error fetching webpage data.",
                 "color": "#dc3545",
+                "mention_user": False,
             },
             "api_check_failed": {
                 "title": "API Check Failed",
                 "description": "Error fetching API data.",
                 "color": "#dc3545",
+                "mention_user": False,
             },
         }
 
@@ -115,15 +125,11 @@ class NotificationManager:
         if not template:
             raise ValueError(f"Notification template not found for key '{key}'")
 
-        title = template["title"]
-        description = template["description"]
-        color = template.get("color", "#0dcaf0")
-        fields = fields or {}
-
         self.notif_service.send(
-            title=title,
-            description=description,
+            title=template["title"],
+            description=template["description"],
             url=url,
-            fields=fields,
-            color=color
+            fields=fields or {},
+            color=template.get("color", "#0dcaf0"),
+            mention_user=template.get("mention_user", True),
         )
