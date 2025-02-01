@@ -111,9 +111,15 @@ def send_daily_discord_notification(config_service):
 
     summary = daily_log.get(yesterday, {})
     if summary:
-        message_lines = [f"Daily Summary for {yesterday}"]
+        message_lines = []
         for url, counts in summary.items():
+            total_attempts = counts.get('success', 0) + counts.get('fail', 0)
+            if total_attempts > 0:
+                success_rate = (counts.get('success', 0) / total_attempts) * 100
+            else:
+                success_rate = 0
             message_lines.append(f"- **URL**: {url}")
+            message_lines.append(f"  - Success Rate: `{success_rate:.2f}%`")
             message_lines.append(f"  - Success: `{counts.get('success', 0)}`")
             message_lines.append(f"  - Fail: `{counts.get('fail', 0)}`")
         message = "\n".join(message_lines)
