@@ -6,9 +6,8 @@ from datetime import datetime, timezone
 
 import requests
 from bs4 import BeautifulSoup
-from configuration_service import ConfigurationService
 from json_path_error import JSONPathError
-from selenium_session import SeleniumSession
+from services import ConfigurationService, SeleniumSession
 
 
 def save_data(file_path, data):

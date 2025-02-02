@@ -33,7 +33,9 @@ class SeleniumSession:
             for entry in error_logs:
                 logging.info(f"JS Console Error: {entry['message']}")
 
-            return self.driver.page_source
+            page_source = self.driver.page_source
+            # self.driver.execute_script("window.close();")
+            return page_source
         except Exception as e:
             logging.error(f"Error fetching page {url} using Selenium: {e}")
             raise

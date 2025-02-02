@@ -5,12 +5,10 @@ import os
 import argparse
 from datetime import datetime, timedelta
 
-from configuration_service import ConfigurationService
 from vha_toolbox import seconds_to_humantime
-
 from check_version import check_for_update
 from checker import check_availability
-from notification_service import NotificationService, NotificationManager
+from services import *
 
 logging.basicConfig(
     level=logging.INFO,
