@@ -114,14 +114,13 @@ def send_daily_discord_notification(config_service):
         message_lines = []
         for url, counts in summary.items():
             total_attempts = counts.get('success', 0) + counts.get('fail', 0)
-            if total_attempts > 0:
-                success_rate = (counts.get('success', 0) / total_attempts) * 100
-            else:
-                success_rate = 0
+            success_rate = (counts.get('success', 0) / total_attempts) * 100 if total_attempts > 0 else 0
+            time_between_checks = (24 * 60 * 60) / counts.get('success', 0) if counts.get('success', 0) > 0 else 0
             message_lines.append(f"- **URL**: {url}")
             message_lines.append(f"  - Success Rate: `{success_rate:.2f}%`")
             message_lines.append(f"  - Success: `{counts.get('success', 0)}`")
             message_lines.append(f"  - Fail: `{counts.get('fail', 0)}`")
+            message_lines.append(f"  - Checks every: `{seconds_to_humantime(time_between_checks)}`")
         message = "\n".join(message_lines)
 
         notif_manager = config_service.get_config("notification_manager")
