@@ -1,5 +1,3 @@
-import os
-import json
 import logging
 import time
 from datetime import datetime, timezone
@@ -10,27 +8,13 @@ from json_path_error import JSONPathError
 from services import ConfigurationService, SeleniumSession
 
 
-def save_data(file_path, data):
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    with open(file_path, 'w') as file:
-        json.dump(data, file, indent=4)
-
-
-def load_data(file_path):
-    if os.path.exists(file_path):
-        with open(file_path, 'r') as file:
-            return json.load(file)
-    return {}
-
-
 def update_daily_log_by_url(url, success=0, fail=0):
     """
     Updates (or creates) a daily log file that tracks the number of successful and failed checks by URL.
     """
     config_service = ConfigurationService()
-    storage_dir = config_service.get_config("storage_dir")
-    log_file = os.path.join(storage_dir, 'daily_log.json')
-    daily_log = load_data(log_file)
+    file_service = config_service.get_config("file_service")
+    daily_log = file_service.load_json('daily_log.json')
     today = datetime.now().strftime('%Y-%m-%d')
     
     if today not in daily_log:
@@ -41,36 +25,32 @@ def update_daily_log_by_url(url, success=0, fail=0):
     
     daily_log[today][url]["success"] += success
     daily_log[today][url]["fail"] += fail
-    
-    save_data(log_file, daily_log)
+
+    file_service.save_json('daily_log.json', daily_log)
 
 
 def check_availability():
     config_service = ConfigurationService()
-    storage_dir = config_service.get_config("storage_dir")
     rules = config_service.get_config("rules")
-    notif = config_service.get_config("notification_service")
     selenium_session = SeleniumSession() if any(rule.get("use_selenium", False) for rule in rules.values()) else None
 
-    previous_data_path = os.path.join(storage_dir, 'previous_data.json')
-    missing_data_path = os.path.join(storage_dir, 'missing_elements.json')
-
     for url, rule in rules.items():
-        previous_data = load_data(previous_data_path)
         if rule.get("api_check", False):
-            check_api_availability(url, rule, previous_data, notif, previous_data_path)
+            check_api_availability(url, rule)
         elif rule.get("webpage_check", False):
-            missing_data = load_data(missing_data_path)
-            check_webpage_availability(url, rule, selenium_session, previous_data, missing_data, notif, previous_data_path, missing_data_path)
+            check_webpage_availability(url, rule, selenium_session)
 
 
-def check_webpage_availability(url, rule, selenium_session, previous_data, missing_data, notif, previous_data_path, missing_data_path):
+def check_webpage_availability(url, rule, selenium_session):
     """
     Check the availability of a webpage and compare the HTML content with the previous data.
     """
-    current_data = previous_data.copy()
     configuration_service = ConfigurationService()
     notification_manager = configuration_service.get_config("notification_manager")
+    file_service = configuration_service.get_config("file_service")
+    missing_data = file_service.load_json('missing_data.json')
+    previous_data = file_service.load_json('previous_data.json')
+    current_data = previous_data.copy()
     selectors = rule.get("selectors", [])
     use_selenium = rule.get("use_selenium", False)
 
@@ -95,7 +75,7 @@ def check_webpage_availability(url, rule, selenium_session, previous_data, missi
                 logging.warning(f"Element missing for {url} with selector {selector}")
                 if key not in missing_data or not missing_data[key].get("alert_sent", False):
                     missing_data[key] = {"url": url, "selector": selector, "timestamp": time.time(), "alert_sent": True}
-                    save_data(missing_data_path, missing_data)
+                    file_service.save_json('missing_data.json', missing_data)
                     notification_manager.send("element_missing", url=url, fields={"URL": url, "Selector": f"`{selector}`"})
                 continue
 
@@ -107,7 +87,7 @@ def check_webpage_availability(url, rule, selenium_session, previous_data, missi
             if key in missing_data:
                 logging.info(f"Element returned for {url} with selector {selector}")
                 del missing_data[key]
-                save_data(missing_data_path, missing_data)
+                file_service.save_json('missing_data.json', missing_data)
                 notification_manager.send("element_returned", url=url, fields={"URL": url, "Selector": f"`{selector}`"})
 
             if key not in previous_data:
@@ -133,7 +113,7 @@ def check_webpage_availability(url, rule, selenium_session, previous_data, missi
             else:
                 logging.info(f"No change detected for {url} with selector {selector}")
         
-        save_data(previous_data_path, current_data)
+        file_service.save_json('missing_data.json', missing_data)
         update_daily_log_by_url(url, success=1)
 
     except Exception as e:
@@ -146,13 +126,15 @@ def check_webpage_availability(url, rule, selenium_session, previous_data, missi
             notification_manager.send("webpage_check_failed", url=url, fields={"URL": url, "Exception": f"`{e}`"})
 
 
-def check_api_availability(api_url, rule, previous_data, notif, previous_data_path):
+def check_api_availability(api_url, rule):
     """
     Check the availability of an API endpoint and compare the JSON data with the previous data.
     """
-    current_data = previous_data.copy()
     configuration_service = ConfigurationService()
     notification_manager = configuration_service.get_config("notification_manager")
+    file_service = configuration_service.get_config("file_service")
+    previous_data = file_service.load_json('previous_data.json')
+    current_data = previous_data.copy()
     headers = {
         "User-Agent": configuration_service.get_config("api_user_agent"),
         "Accept": "application/json"
@@ -200,7 +182,7 @@ def check_api_availability(api_url, rule, previous_data, notif, previous_data_pa
             else:
                 logging.info(f"No change detected for {api_url} with selector `{selector}`")
         
-        save_data(previous_data_path, current_data)
+        file_service.save_json('previous_data.json', current_data)
         update_daily_log_by_url(api_url, success=1)
 
     except Exception as e:

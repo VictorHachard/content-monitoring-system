@@ -1,7 +1,5 @@
 import time
 import logging
-import json
-import os
 import argparse
 from datetime import datetime, timedelta
 
@@ -61,34 +59,18 @@ def create_notification_service(webhook_url, mention_users, current_version):
     return NotificationService(webhook_url, mention_users, footer=footer)
 
 
-def save_data(file_path, data):
-    """Saves a dictionary as JSON into the given file path."""
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    with open(file_path, 'w') as file:
-        json.dump(data, file, indent=4)
-
-
-def load_data(file_path):
-    """Loads a JSON file and returns a dictionary. Returns an empty dict if the file does not exist."""
-    if os.path.exists(file_path):
-        with open(file_path, 'r') as file:
-            return json.load(file)
-    return {}
-
-
-def has_notification_been_sent(storage_dir, today):
+def has_notification_been_sent(today):
     """Checks whether today's daily notification has already been sent."""
-    status_file = f"{storage_dir}/daily_notification_status.json"
-    status_data = load_data(status_file)
+    status_data = config_service.get_config("file_service").load_json('daily_notification_status.json')
     return status_data.get(today, False)
 
 
-def update_notification_status(storage_dir, today, status=True):
+def update_notification_status(today, status=True):
     """Records in a file that today's notification has been sent."""
-    status_file = f"{storage_dir}/daily_notification_status.json"
-    status_data = load_data(status_file)
+    file_service = config_service.get_config("file_service")
+    status_data = file_service.load_json('daily_notification_status.json')
     status_data[today] = status
-    save_data(status_file, status_data)
+    file_service.save_json('daily_notification_status.json', status_data)
 
 
 def send_daily_discord_notification(config_service):
@@ -97,13 +79,12 @@ def send_daily_discord_notification(config_service):
     if it hasn't been sent yet. Expects the daily log file to be stored as 'daily_log.json'
     in the storage directory.
     """
-    storage_dir = config_service.get_config("storage_dir")
-    log_file = f"{storage_dir}/daily_log.json"
-    daily_log = load_data(log_file)
+    file_service = config_service.get_config("file_service")
+    daily_log = file_service.load_json('daily_log.json')
     
     yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
 
-    if has_notification_been_sent(storage_dir, yesterday):
+    if has_notification_been_sent(yesterday):
         logging.info(f"Daily notification for {yesterday} has already been sent.")
         return
 
@@ -116,15 +97,15 @@ def send_daily_discord_notification(config_service):
             time_between_checks = (24 * 60 * 60) / counts.get('success', 0) if counts.get('success', 0) > 0 else 0
             message_lines.append(f"- **URL**: {url}")
             message_lines.append(f"  - Success Rate: `{success_rate:.2f}%`")
+            message_lines.append(f"  - Successful checks every: `{seconds_to_humantime(time_between_checks)}`")
             message_lines.append(f"  - Success: `{counts.get('success', 0)}`")
             message_lines.append(f"  - Fail: `{counts.get('fail', 0)}`")
-            message_lines.append(f"  - Checks every: `{seconds_to_humantime(time_between_checks)}`")
         message = "\n".join(message_lines)
 
         notif_manager = config_service.get_config("notification_manager")
         notif_manager.send("daily_summary", fields={"Date": yesterday, "Summary": message})
         logging.info(f"Daily notification sent for {yesterday}")
-    update_notification_status(storage_dir, yesterday, status=True)
+    update_notification_status(yesterday, status=True)
 
 
 if __name__ == "__main__":
@@ -146,6 +127,8 @@ if __name__ == "__main__":
 
     config_service.set_config("notification_manager", NotificationManager(notif))
     notif_manager = config_service.get_config("notification_manager")
+
+    config_service.set_config("file_service", FileService(config_service.get_config("storage_dir")))
 
     rules_formatted = "\n".join(
         f"- **URL**: {url}\n"
