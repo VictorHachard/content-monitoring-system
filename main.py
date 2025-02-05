@@ -95,7 +95,9 @@ def send_daily_discord_notification(config_service):
             total_attempts = counts.get('success', 0) + counts.get('fail', 0)
             success_rate = (counts.get('success', 0) / total_attempts) * 100 if total_attempts > 0 else 0
             time_between_checks = (24 * 60 * 60) / counts.get('success', 0) if counts.get('success', 0) > 0 else 0
+            color_emoji = "🟢" if success_rate >= 80 else "🟡" if success_rate >= 50 else "🔴"
             message_lines.append(f"- **URL**: {url}")
+            message_lines.append(f"  - State: {color_emoji}")
             message_lines.append(f"  - Success Rate: `{success_rate:.2f}%`")
             message_lines.append(f"  - Successful checks every: `{seconds_to_humantime(time_between_checks)}`")
             message_lines.append(f"  - Success: `{counts.get('success', 0)}`")
