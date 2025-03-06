@@ -202,16 +202,36 @@ def check_api_availability(api_url, rule):
 
 def extract_json_value(json_data, path):
     """
-    Extracts a value from a nested JSON object using dot notation
-    (e.g., 'searchedProducts.productDetails.0.productPrice').
+    Extracts a value from a nested JSON object using dot notation.
+    Supports the placeholder '<x>' to iterate over a list.
+    
+    For example, 'days.<x>.day' will extract the 'day' attribute from every item in the 'days' list.
+    Raises JSONPathError if a key/index is missing or if the placeholder is applied to a non-list.
     """
     keys = path.split(".")
-    value = json_data
-    try:
-        for key in keys:
+
+    def helper(current, keys_remaining):
+        if not keys_remaining:
+            return current
+
+        key = keys_remaining[0]
+        if key == "<x>":
+            # Ensure current is a list before iterating
+            if not isinstance(current, list):
+                raise JSONPathError(path, f"Expected list for '<x>' placeholder, got {type(current).__name__}")
+            # Apply the rest of the keys to each element in the list
+            results = []
+            for item in current:
+                results.append(helper(item, keys_remaining[1:]))
+            return results
+        else:
+            # Handle numeric keys for list indices (e.g., '0', '1', etc.)
             if key.isdigit():
                 key = int(key)
-            value = value[key]
-        return value
-    except (KeyError, IndexError, TypeError) as e:
-        raise JSONPathError(path, f"Invalid JSON path at {str(e)}")
+            try:
+                next_value = current[key]
+            except (KeyError, IndexError, TypeError) as e:
+                raise JSONPathError(path, f"Invalid JSON path at {str(e)}")
+            return helper(next_value, keys_remaining[1:])
+
+    return helper(json_data, keys)
