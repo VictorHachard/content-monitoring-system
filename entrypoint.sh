@@ -32,6 +32,7 @@ CMD=(
 [ -n "$API_USER_AGENT" ] && CMD+=("--api-user-agent" "$API_USER_AGENT")
 [ -n "$WEBPAGE_TIMEOUT" ] && CMD+=("--webpage-timeout" "$WEBPAGE_TIMEOUT")
 [ -n "$API_TIMEOUT" ] && CMD+=("--api-timeout" "$API_TIMEOUT")
+[ -n "SOCKS5_PROXY" ] && CMD+=("--socks5-proxy" "$SOCKS5_PROXY")
 
 # Run the application
 "${CMD[@]}"

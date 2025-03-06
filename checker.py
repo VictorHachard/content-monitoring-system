@@ -141,7 +141,12 @@ def check_api_availability(api_url, rule):
     }
 
     try:
-        response = requests.get(api_url, headers=headers, timeout=configuration_service.get_config("api_timeout"))
+        response = requests.get(
+            api_url,
+            headers=headers,
+            timeout=configuration_service.get_config("api_timeout"),
+            proxies=configuration_service.get_config("socks5_proxy", {})
+        )
         response.raise_for_status()
         data = response.json()
 

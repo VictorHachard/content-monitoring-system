@@ -1,6 +1,8 @@
 import json
 import logging
 
+import requests
+
 
 class ConfigurationService:
     _instance = None  # Singleton instance
@@ -54,6 +56,29 @@ class ConfigurationService:
 
         self.set_config("webpage_timeout", args.webpage_timeout)
         self.set_config("api_timeout", args.api_timeout)
+
+        if args.socks5_proxy:
+            socks5_proxy = {
+                "http": args.socks5_proxy,
+                "https": args.socks5_proxy
+            }
+            self.validate_proxy(args.socks5_proxy)
+            self.set_config("socks5-proxy", socks5_proxy)
+
+    def validate_proxy(self, proxy):
+        """Validates that the proxy is in the correct format."""
+        if not proxy:
+            return
+
+        if not proxy.startswith("socks5://"):
+            raise ValueError("Proxy must start with 'socks5://'.")
+        
+        # Test with a a google.com request
+        try:
+            logging.info(f"Testing proxy: {proxy.split('@')[-1]}")
+            requests.get("https://google.com", proxies={"http": proxy, "https": proxy}, timeout=5)
+        except Exception as e:
+            raise ValueError(f"Proxy test failed: {e}")
     
     def validate_rules(self, rules):
         """Validates that each rule has either 'api_check' or 'webpage_check' with required fields."""

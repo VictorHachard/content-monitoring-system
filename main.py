@@ -48,6 +48,8 @@ def parse_arguments():
     parser.add_argument('--webpage-timeout', type=int, default=5, help="Timeout for webpage checks in seconds.")
     parser.add_argument('--api-timeout', type=int, default=5, help="Timeout for API checks in seconds.")
 
+    parser.add_argument('--socks5-proxy', type=str, help="SOCKS5 proxy for connections.")
+
     return parser.parse_args()
 
 
@@ -140,7 +142,13 @@ if __name__ == "__main__":
         if rule.get("webpage_check") else "")
         for url, rule in rules.items()
     )
-    notif_manager.send("system_start", fields={"Interval": seconds_to_humantime(interval), "Rules": rules_formatted})
+    notif_manager.send("system_start", fields={
+        "Interval": seconds_to_humantime(interval),
+        "Webpage Timeout": seconds_to_humantime(config_service.get_config('webpage_timeout')),
+        "API Timeout": seconds_to_humantime(config_service.get_config('api_timeout')),
+        "Socks5 Proxy": "True" if config_service.get_config('socks5-proxy') else "False",
+        "Rules": rules_formatted
+        })
     if isinstance(update, tuple):
         notif_manager.send("update_available", fields={"Current Version": update[0], "Latest Version": update[1]},)
     del rules_formatted, update, current_version

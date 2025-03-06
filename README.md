@@ -9,6 +9,7 @@ This repository provides a Docker Compose setup for the Content Monitoring Syste
 - Optionally use Selenium for pages that require full rendering before DOM access.
 - Get real-time notifications through Discord webhooks.
 - Mention specific users in notifications.
+- Optionally use a SOCKS5 proxy for requests.
 
 ## Overview
 
@@ -30,6 +31,10 @@ This repository provides a Docker Compose setup for the Content Monitoring Syste
   - `API_USER_AGENT`: The user agent string to use for API requests. There is a default value.
   - `WEBPAGE_TIMEOUT`: The timeout in seconds for webpage requests. The default value is `5`.
   - `API_TIMEOUT`: The timeout in seconds for API requests. The default value is `5`.
+  - `SOCKS5_PROXY`: The SOCKS5 proxy URL for requests. Example:
+    ```
+    socks5://USERNAME:PASSWORD@PROXY_ADDRESS:PORT
+    ```
   - `INTERVAL`: Specifies the monitoring interval in seconds. The default value is `300`.
   - `RULES`: A JSON string that configures the selectors for monitored pages. Example configuration:
     ```json
